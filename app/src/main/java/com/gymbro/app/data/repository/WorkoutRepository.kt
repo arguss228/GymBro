@@ -29,8 +29,15 @@ class WorkoutRepository @Inject constructor(
     fun observeDayExercises(dayId: Long): Flow<List<TrainingDayExerciseEntity>> =
         dayDao.observeExercisesForDay(dayId)
 
+    suspend fun getDaysForPlan(planId: Long): List<TrainingDayEntity> =
+        dayDao.getDaysForPlan(planId)
+
+    suspend fun getExercisesForDay(dayId: Long): List<TrainingDayExerciseEntity> =
+        dayDao.getExercisesForDay(dayId)
+
     suspend fun setActive(planId: Long) = planDao.setActive(planId)
 
+    /** Создаёт новый пользовательский план со всеми днями и упражнениями. */
     suspend fun createCustomPlan(
         plan: WorkoutPlanEntity,
         days: List<Pair<TrainingDayEntity, List<TrainingDayExerciseEntity>>>,
@@ -43,6 +50,37 @@ class WorkoutRepository @Inject constructor(
             dayDao.insertDayExercises(exercises.map { it.copy(id = 0L, dayId = dayId) })
         }
         return planId
+    }
+
+    /**
+     * Обновляет существующий план:
+     * 1. Обновляет метаданные плана (название, описание и т.д.).
+     * 2. Полностью перезаписывает дни и их упражнения в правильном порядке.
+     *
+     * Используется при редактировании как пользовательских, так и preset-планов,
+     * но preset-флаг не изменяется.
+     */
+    suspend fun updatePlan(
+        plan: WorkoutPlanEntity,
+        days: List<Pair<TrainingDayEntity, List<TrainingDayExerciseEntity>>>,
+    ) {
+        planDao.update(plan)
+
+        // Атомарно удаляем все старые дни и вставляем новые с актуальными orderIndex.
+        val newDays = days.mapIndexed { index, (day, _) ->
+            day.copy(planId = plan.id, orderIndex = index, id = 0L)
+        }
+        val dayIds = dayDao.replaceDaysForPlan(plan.id, newDays)
+
+        // Вставляем упражнения для каждого нового дня.
+        days.forEachIndexed { index, (_, exercises) ->
+            val dayId = dayIds[index]
+            dayDao.insertDayExercises(
+                exercises.mapIndexed { exIndex, ex ->
+                    ex.copy(id = 0L, dayId = dayId, orderIndex = exIndex)
+                }
+            )
+        }
     }
 
     suspend fun replaceDayExercises(dayId: Long, exercises: List<TrainingDayExerciseEntity>) {
