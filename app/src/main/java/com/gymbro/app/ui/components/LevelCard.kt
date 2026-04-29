@@ -1,7 +1,9 @@
 package com.gymbro.app.ui.components
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,17 +17,23 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -33,8 +41,9 @@ import com.gymbro.app.domain.model.BigThreeLift
 import com.gymbro.app.domain.model.StrengthLevel
 
 /**
- * Большая «геройская» карточка уровня на Dashboard.
- * Цветовая гамма зависит от tier: серый → синий → золотой → фиолетовый.
+ * Главная «геройская» карточка уровня.
+ * Адаптируется к светлой и тёмной теме через MaterialTheme.colorScheme.
+ * При нажатии показывает [LevelTableSheet].
  */
 @Composable
 fun LevelCard(
@@ -42,163 +51,206 @@ fun LevelCard(
     modifier: Modifier = Modifier,
 ) {
     val tier = level.tier
-    val gradient = Brush.linearGradient(
-        colors = listOf(tier.primary, tier.secondary)
+    val accentColor = tier.primary
+
+    // Animate progress bar on first render / value change
+    val animatedProgress by animateFloatAsState(
+        targetValue = if (level.isMaxLevel) 1f else level.progressToNext,
+        animationSpec = tween(durationMillis = 1000),
+        label = "levelProgress",
     )
 
-    Surface(
+    var showSheet by remember { mutableStateOf(false) }
+    if (showSheet) {
+        LevelTableSheet(
+            currentLevel = level.level,
+            onDismiss    = { showSheet = false },
+        )
+    }
+
+    Card(
         modifier = modifier
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            .clickable { showSheet = true },
         shape = RoundedCornerShape(24.dp),
-        color = Color.Transparent,
+        colors = CardDefaults.cardColors(
+            containerColor = accentColor.copy(alpha = 0.10f),
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(gradient)
-                .padding(24.dp)
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                // Header row: icon + tier label + "Level X"
+            // ── Top row: tier badge + level number ──────────────
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                // Icon + tier label
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(accentColor.copy(alpha = 0.18f)),
+                        contentAlignment = Alignment.Center,
                     ) {
+                        Icon(
+                            Icons.Default.EmojiEvents,
+                            contentDescription = null,
+                            tint = accentColor,
+                            modifier = Modifier.size(24.dp),
+                        )
+                    }
+                    Column {
                         Box(
                             modifier = Modifier
-                                .size(56.dp)
-                                .clip(CircleShape)
-                                .background(Color.White.copy(alpha = 0.2f))
-                                .border(2.dp, Color.White.copy(alpha = 0.4f), CircleShape),
-                            contentAlignment = Alignment.Center,
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(accentColor.copy(alpha = 0.18f))
+                                .padding(horizontal = 8.dp, vertical = 2.dp),
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.EmojiEvents,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(32.dp),
+                            Text(
+                                tier.title.uppercase(),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = accentColor,
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 1.sp,
                             )
                         }
-                        Column {
-                            Text(
-                                text = tier.title.uppercase(),
-                                style = MaterialTheme.typography.labelLarge,
-                                color = Color.White.copy(alpha = 0.85f),
-                            )
-                            Text(
-                                text = "Уровень силы",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                            )
-                        }
-                    }
-
-                    // Level number — очень крупный
-                    Text(
-                        text = "${level.level}",
-                        fontSize = 72.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Color.White,
-                    )
-                }
-
-                // Progress bar
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
                         Text(
-                            text = if (level.isMaxLevel) "Максимальный уровень" else "До уровня ${level.level + 1}",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = Color.White.copy(alpha = 0.9f),
+                            "Уровень силы",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                        if (!level.isMaxLevel) {
-                            Text(
-                                text = "${(level.progressToNext * 100).toInt()}%",
-                                style = MaterialTheme.typography.labelLarge,
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                            )
-                        }
                     }
-                    LevelProgressBar(
-                        progress = if (level.isMaxLevel) 1f else level.progressToNext,
-                        gradientStart = Color.White,
-                        gradientEnd = Color.White.copy(alpha = 0.8f),
-                        trackColor = Color.Black.copy(alpha = 0.2f),
-                    )
                 }
 
-                // Breakdown: сколько кг осталось по каждому лифту
-                if (!level.isMaxLevel) {
-                    Spacer(Modifier.height(4.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        BigThreeLift.values().forEach { lift ->
-                            val kg = level.kgToNextByLift[lift] ?: 0.0
-                            val best = level.best5RM[lift] ?: 0.0
-                            LiftDelta(
-                                liftShort = lift.shortName,
-                                best5Rm = best,
-                                kgRemaining = kg,
-                                modifier = Modifier.weight(1f),
-                            )
-                        }
+                // Level number + arrow hint
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "${level.level}",
+                        fontSize = 56.sp,
+                        fontWeight = FontWeight.Black,
+                        color = accentColor,
+                    )
+                    Icon(
+                        Icons.Default.KeyboardArrowRight,
+                        contentDescription = "Таблица уровней",
+                        tint = accentColor.copy(alpha = 0.5f),
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
+            }
+
+            // ── Progress bar ────────────────────────────────────
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = if (level.isMaxLevel) "Максимальный уровень"
+                               else "До уровня ${level.level + 1}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    if (!level.isMaxLevel) {
+                        Text(
+                            "${(level.progressToNext * 100).toInt()}%",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = accentColor,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                }
+                LinearProgressIndicator(
+                    progress      = { animatedProgress },
+                    modifier      = Modifier
+                        .fillMaxWidth()
+                        .height(10.dp)
+                        .clip(RoundedCornerShape(5.dp)),
+                    color         = accentColor,
+                    trackColor    = accentColor.copy(alpha = 0.18f),
+                    strokeCap     = StrokeCap.Round,
+                )
+            }
+
+            // ── Lift breakdown ──────────────────────────────────
+            if (!level.isMaxLevel && level.kgToNextByLift.isNotEmpty()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    BigThreeLift.values().forEach { lift ->
+                        val kgLeft = level.kgToNextByLift[lift] ?: 0.0
+                        val best   = level.best1RM[lift] ?: 0.0
+                        LiftChip(
+                            liftShort    = lift.shortName,
+                            best1Rm      = best,
+                            kgRemaining  = kgLeft,
+                            accentColor  = accentColor,
+                            modifier     = Modifier.weight(1f),
+                        )
                     }
                 }
             }
+
+            // ── Tap hint ────────────────────────────────────────
+            Text(
+                "Нажмите, чтобы увидеть таблицу уровней →",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+            )
         }
     }
 }
 
 @Composable
-private fun LiftDelta(
+private fun LiftChip(
     liftShort: String,
-    best5Rm: Double,
+    best1Rm: Double,
     kgRemaining: Double,
+    accentColor: androidx.compose.ui.graphics.Color,
     modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(Color.White.copy(alpha = 0.15f))
-            .padding(horizontal = 10.dp, vertical = 8.dp),
+            .background(accentColor.copy(alpha = 0.10f))
+            .padding(horizontal = 8.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         Text(
-            text = liftShort,
-            style = MaterialTheme.typography.labelLarge,
-            color = Color.White.copy(alpha = 0.85f),
+            liftShort,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-            text = "${best5Rm.toInt()} кг",
-            style = MaterialTheme.typography.titleMedium,
-            color = Color.White,
+            "${best1Rm.toInt()} кг",
+            style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
         )
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(3.dp),
         ) {
             Icon(
-                imageVector = Icons.Default.TrendingUp,
+                Icons.Default.TrendingUp,
                 contentDescription = null,
-                tint = Color.White.copy(alpha = 0.9f),
-                modifier = Modifier.size(14.dp),
+                tint = accentColor,
+                modifier = Modifier.size(12.dp),
             )
             Text(
-                text = if (kgRemaining > 0.0) "+${kgRemaining.toInt()} кг" else "✓",
-                style = MaterialTheme.typography.labelLarge,
-                color = Color.White,
+                if (kgRemaining > 0.0) "+${kgRemaining.toInt()} кг" else "✓",
+                style = MaterialTheme.typography.labelSmall,
+                color = accentColor,
+                fontWeight = FontWeight.SemiBold,
             )
         }
     }

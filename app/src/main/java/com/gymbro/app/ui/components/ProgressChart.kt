@@ -1,32 +1,41 @@
 package com.gymbro.app.ui.components
 
-import android.graphics.Color as AndroidColor
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
-import com.github.mikephil.charting.charts.LineChart
-import com.github.mikephil.charting.components.XAxis
-import com.github.mikephil.charting.data.Entry
-import com.github.mikephil.charting.data.LineData
-import com.github.mikephil.charting.data.LineDataSet
-import com.github.mikephil.charting.formatter.ValueFormatter
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 /**
- * График прогресса — точки «вес подхода во времени» или «1RM во времени».
+ * График прогресса — нарастающий максимальный вес.
+ * Реализован через Compose Canvas (без MPAndroidChart) — корректно
+ * адаптируется к светлой и тёмной теме через MaterialTheme.colorScheme.
  *
- * @param points пары (timestampMillis, value)
- * @param label подпись датасета (например "Вес, кг")
+ * @param points (timestampMillis, weightKg) — уже отфильтрованные и
+ *               преобразованные в нарастающий максимум в ViewModel.
+ * @param label  подпись набора данных (отображается в заголовке).
  */
 @Composable
 fun ProgressChart(
@@ -34,65 +43,137 @@ fun ProgressChart(
     label: String,
     modifier: Modifier = Modifier,
 ) {
-    val primaryColor = MaterialTheme.colorScheme.primary.toArgb()
-    val textColor = MaterialTheme.colorScheme.onSurface.toArgb()
-    val gridColor = MaterialTheme.colorScheme.onSurfaceVariant.toArgb()
+    if (points.isEmpty()) return
 
-    val dateFormatter = remember { SimpleDateFormat("d MMM", Locale.getDefault()) }
+    val primary    = MaterialTheme.colorScheme.primary
+    val onSurface  = MaterialTheme.colorScheme.onSurface
+    val gridColor  = MaterialTheme.colorScheme.outlineVariant
+    val dateFormat = SimpleDateFormat("d MMM", Locale("ru"))
 
-    AndroidView(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(220.dp)
-            .clip(RoundedCornerShape(16.dp)),
-        factory = { ctx ->
-            LineChart(ctx).apply {
-                description.isEnabled = false
-                legend.textColor = textColor
-                setNoDataTextColor(textColor)
-                setTouchEnabled(true)
-                setScaleEnabled(true)
-                setPinchZoom(true)
-                axisRight.isEnabled = false
-                axisLeft.textColor = textColor
-                axisLeft.gridColor = gridColor
-                xAxis.position = XAxis.XAxisPosition.BOTTOM
-                xAxis.textColor = textColor
-                xAxis.gridColor = gridColor
-                xAxis.granularity = 1f
-                setExtraOffsets(8f, 8f, 16f, 8f)
-            }
-        },
-        update = { chart ->
-            if (points.isEmpty()) {
-                chart.clear()
-                chart.setNoDataText("Нет данных")
-                chart.invalidate()
-                return@AndroidView
-            }
-            val entries = points.mapIndexed { idx, (_, v) -> Entry(idx.toFloat(), v) }
-            val set = LineDataSet(entries, label).apply {
-                color = primaryColor
-                setCircleColor(primaryColor)
-                lineWidth = 2.2f
-                circleRadius = 4f
-                setDrawValues(false)
-                mode = LineDataSet.Mode.CUBIC_BEZIER
-                setDrawFilled(true)
-                fillColor = primaryColor
-                fillAlpha = 40
-            }
-            chart.data = LineData(set)
+    val maxVal = points.maxOf { it.second }
+    val minVal = points.minOf { it.second }
+    val range  = (maxVal - minVal).coerceAtLeast(1f)
 
-            chart.xAxis.valueFormatter = object : ValueFormatter() {
-                override fun getFormattedValue(value: Float): String {
-                    val idx = value.toInt().coerceIn(0, points.lastIndex)
-                    return dateFormatter.format(Date(points[idx].first))
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape    = RoundedCornerShape(20.dp),
+        colors   = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    "Макс: ${"%.1f".format(maxVal)} кг",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = primary,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    "Точек: ${points.size}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            // Canvas chart
+            Canvas(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(160.dp)
+                    .clip(RoundedCornerShape(12.dp)),
+            ) {
+                val w     = size.width
+                val h     = size.height
+                val pad   = 12.dp.toPx()  // left/right padding inside canvas
+                val stepX = if (points.size > 1) (w - pad * 2) / (points.size - 1) else w
+
+                // ── Horizontal grid lines ──
+                val gridLines = 4
+                repeat(gridLines + 1) { i ->
+                    val y = h * i / gridLines
+                    drawLine(
+                        color       = gridColor.copy(alpha = 0.4f),
+                        start       = Offset(0f, y),
+                        end         = Offset(w, y),
+                        strokeWidth = 1.dp.toPx(),
+                    )
+                }
+
+                // ── Build path ──
+                val linePath = Path()
+                points.forEachIndexed { i, (_, v) ->
+                    val cx = pad + i * stepX
+                    val cy = h - ((v - minVal) / range) * (h - pad)
+                    if (i == 0) linePath.moveTo(cx, cy) else linePath.lineTo(cx, cy)
+                }
+
+                // ── Fill under the line ──
+                val fillPath = Path().apply {
+                    addPath(linePath)
+                    val lastCx = pad + (points.size - 1) * stepX
+                    lineTo(lastCx, h)
+                    lineTo(pad, h)
+                    close()
+                }
+                drawPath(
+                    path  = fillPath,
+                    brush = Brush.verticalGradient(
+                        colors = listOf(primary.copy(alpha = 0.30f), Color.Transparent),
+                    ),
+                )
+
+                // ── Draw line stroke ──
+                drawPath(
+                    path  = linePath,
+                    color = primary,
+                    style = Stroke(
+                        width = 2.5.dp.toPx(),
+                        cap   = StrokeCap.Round,
+                        join  = StrokeJoin.Round,
+                    ),
+                )
+
+                // ── Dots ──
+                points.forEachIndexed { i, (_, v) ->
+                    val cx = pad + i * stepX
+                    val cy = h - ((v - minVal) / range) * (h - pad)
+                    drawCircle(color = primary, radius = 4.dp.toPx(), center = Offset(cx, cy))
+                    drawCircle(color = Color.White, radius = 2.dp.toPx(), center = Offset(cx, cy))
                 }
             }
 
-            chart.invalidate()
-            chart.animateX(700)
+            // ── X-axis labels ──
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    dateFormat.format(Date(points.first().first)),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (points.size > 2) {
+                    Text(
+                        dateFormat.format(Date(points[points.size / 2].first)),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Text(
+                    dateFormat.format(Date(points.last().first)),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
-    )
+    }
 }
