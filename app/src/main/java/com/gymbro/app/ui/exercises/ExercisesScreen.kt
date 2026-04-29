@@ -3,14 +3,17 @@ package com.gymbro.app.ui.exercises
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -25,6 +28,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -36,16 +40,22 @@ import com.gymbro.app.data.local.entity.ExerciseEntity
 @Composable
 fun ExercisesScreen(
     onBack: () -> Unit,
-    onPickExercise: ((Long) -> Unit)? = null, // если null — обычный просмотр
+    /** Клик по упражнению для перехода на детальный экран (обычный режим просмотра). */
+    onExerciseClick: ((Long) -> Unit)? = null,
+    /** Клик по упражнению для выбора из PlanEditor (режим пикера). */
+    onPickExercise: ((Long) -> Unit)? = null,
     viewModel: ExercisesViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    val isPicker = onPickExercise != null
+    val title = if (isPicker) "Выберите упражнение" else "База упражнений"
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text(if (onPickExercise != null) "Выберите упражнение" else "База упражнений") },
+                title = { Text(title) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
@@ -75,10 +85,15 @@ fun ExercisesScreen(
                 ),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                items(state.exercises, key = { it.id }) { e ->
+                items(state.exercises, key = { it.id }) { exercise ->
                     ExerciseRow(
-                        exercise = e,
-                        onClick = onPickExercise?.let { cb -> { cb(e.id) } },
+                        exercise = exercise,
+                        isPicker = isPicker,
+                        onClick = when {
+                            isPicker -> { { onPickExercise!!(exercise.id) } }
+                            onExerciseClick != null -> { { onExerciseClick(exercise.id) } }
+                            else -> null
+                        },
                     )
                 }
             }
@@ -89,32 +104,55 @@ fun ExercisesScreen(
 @Composable
 private fun ExerciseRow(
     exercise: ExerciseEntity,
-    onClick: (() -> Unit)? = null,
+    isPicker: Boolean,
+    onClick: (() -> Unit)?,
 ) {
-    val base = Modifier
+    val modifier = Modifier
         .fillMaxWidth()
-        .let { if (onClick != null) it.then(Modifier.clickable { onClick() }) else it }
+        .let { m -> if (onClick != null) m.clickable { onClick() } else m }
+
     Card(
-        modifier = base,
+        modifier = modifier,
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
         ),
     ) {
-        Column(Modifier.padding(14.dp)) {
-            Text(
-                exercise.name,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                "${exercise.category.name.lowercase().replaceFirstChar { it.uppercase() }} · " +
-                    "${exercise.equipment.name.lowercase().replaceFirstChar { it.uppercase() }} · " +
-                    exercise.primaryMuscle,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    exercise.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    buildString {
+                        append(exercise.category.name.lowercase().replaceFirstChar { it.uppercase() })
+                        append(" · ")
+                        append(exercise.equipment.name.lowercase().replaceFirstChar { it.uppercase() })
+                        append(" · ")
+                        append(exercise.primaryMuscle)
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            // Arrow — только в обычном режиме просмотра (не пикер)
+            if (!isPicker && onClick != null) {
+                Icon(
+                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = "Подробнее",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
         }
     }
 }
