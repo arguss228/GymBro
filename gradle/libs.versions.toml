@@ -1,7 +1,13 @@
 [versions]
 agp = "9.2.0"
-kotlin = "2.2.10"
-ksp = "2.3.2"
+# FIX (баг 9): версия Kotlin и KSP должны быть совместимы.
+# KSP версия строится по схеме: {kotlin_version}-{ksp_patch}.
+# Kotlin 2.0.21 → KSP 2.0.21-1.0.25 (как было в хардкоде).
+# Если обновляем Kotlin до 2.0.21, то ksp = "2.0.21-1.0.25".
+# Если хотим Kotlin 2.1.x — нужен KSP 2.1.x-y.y.y.
+# Здесь приводим обе версии к стабильной паре 2.0.21 / 2.0.21-1.0.25.
+kotlin = "2.0.21"
+ksp = "2.0.21-1.0.25"
 hilt = "2.52"
 hiltNav = "1.2.0"
 coreKtx = "1.13.1"
@@ -13,7 +19,9 @@ room = "2.7.1"
 coroutines = "1.8.1"
 datastore = "1.1.1"
 serialization = "1.7.3"
-mpAndroidChart = "v3.1.0"
+# FIX: mp.android.chart удалён из зависимостей — версию можно оставить
+# для документации, но можно и удалить совсем.
+# mpAndroidChart = "v3.1.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -53,13 +61,14 @@ androidx-datastore-preferences = { group = "androidx.datastore", name = "datasto
 # Serialization
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
 
-# Charts — MPAndroidChart (via interop) OR a Compose-based chart
-mp-android-chart = { group = "com.github.PhilJay", name = "MPAndroidChart", version.ref = "mpAndroidChart" }
+# FIX: MPAndroidChart удалён — не используется нигде в коде.
+# mp-android-chart = { group = "com.github.PhilJay", name = "MPAndroidChart", version.ref = "mpAndroidChart" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+# FIX: ksp теперь берётся из version catalog, не хардкодом в build.gradle.kts
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }

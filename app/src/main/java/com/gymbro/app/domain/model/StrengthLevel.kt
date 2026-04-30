@@ -14,7 +14,7 @@ data class StrengthLevel(
     val tier: LevelTier,
     val progressToNext: Float,
     val kgToNextByLift: Map<BigThreeLift, Double>,
-    val best5RM: Map<BigThreeLift, Double>
+    val best1RM: Map<BigThreeLift, Double>
 ) {
     val isMaxLevel: Boolean get() = level >= MAX_LEVEL
 
@@ -26,7 +26,7 @@ data class StrengthLevel(
             tier = LevelTier.NOVICE,
             progressToNext = 0f,
             kgToNextByLift = emptyMap(),
-            best5RM = emptyMap()
+            best1RM = emptyMap()
         )
     }
 }

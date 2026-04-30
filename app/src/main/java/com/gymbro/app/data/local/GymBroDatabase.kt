@@ -40,10 +40,12 @@ abstract class GymBroDatabase : RoomDatabase() {
     abstract fun exerciseDao(): ExerciseDao
     abstract fun workoutPlanDao(): WorkoutPlanDao
     abstract fun trainingDayDao(): TrainingDayDao
+    abstract fun trainingDayDao(): TrainingDayDao
     abstract fun setLogDao(): SetLogDao
     abstract fun personalRecordDao(): PersonalRecordDao
     abstract fun levelProgressDao(): LevelProgressDao
     abstract fun userProfileDao(): UserProfileDao
+   
 
     companion object {
         const val DATABASE_NAME = "gymbro.db"
