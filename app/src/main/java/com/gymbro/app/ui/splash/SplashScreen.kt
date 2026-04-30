@@ -18,19 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.ViewModel
-import com.gymbro.app.data.repository.LevelRepository
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
-import javax.inject.Inject
-
-@HiltViewModel
-class SplashViewModel @Inject constructor(
-    private val levelRepo: LevelRepository,
-) : ViewModel() {
-    suspend fun isOnboardingCompleted(): Boolean =
-        levelRepo.getProfile().onboardingCompleted
-}
 
 @Composable
 fun SplashScreen(
@@ -39,7 +27,7 @@ fun SplashScreen(
     viewModel: SplashViewModel = hiltViewModel(),
 ) {
     LaunchedEffect(Unit) {
-        delay(600) // короткое визуальное присутствие
+        delay(600)
         val done = viewModel.isOnboardingCompleted()
         if (done) onReady() else onOnboardingNeeded()
     }
