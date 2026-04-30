@@ -259,7 +259,14 @@ class PlanEditorViewModel @Inject constructor(
 
             if (s.isEditMode && editingPlanId != null) {
                 // Обновляем существующий план, сохраняя оригинальные флаги (isPreset, isActive и т.д.)
-                val updatedPlan = (originalPlan ?: WorkoutPlanEntity(id = editingPlanId)).copy(
+                val updatedPlan = (originalPlan ?: WorkoutPlanEntity(
+                    id = editingPlanId,
+                    name = s.name.trim(),
+                    description = s.description.trim().ifBlank { null },
+                    minLevel = s.minLevel,
+                    daysPerWeek = s.daysPerWeek,
+                    isPreset = false // Или другое значение по умолчанию
+                )).copy(
                     name = s.name.trim(),
                     description = s.description.trim().ifBlank { null },
                     minLevel = s.minLevel,
