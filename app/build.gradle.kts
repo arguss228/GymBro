@@ -3,7 +3,6 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
-    //alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
     id("com.google.devtools.ksp")
 }
@@ -46,7 +45,6 @@ android {
         resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
     }
 
-    // Room schema export (recommended)
     ksp {
         arg("room.schemaLocation", "$projectDir/schemas")
         arg("room.incremental", "true")
@@ -54,14 +52,12 @@ android {
 }
 
 dependencies {
-    // Core
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.activity.compose)
 
-    // Compose
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
@@ -70,28 +66,20 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.extended)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
-    // Navigation
     implementation(libs.androidx.navigation.compose)
 
-    // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.hilt.navigation.compose)
 
-    // Room
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
 
-    // Coroutines
     implementation(libs.kotlinx.coroutines.android)
 
-    // DataStore (для хранения "onboarding done" и т. п.)
     implementation(libs.androidx.datastore.preferences)
 
-    // Serialization (seed data / экспорт)
     implementation(libs.kotlinx.serialization.json)
-
-    // Charts — MPAndroidChart через ComposeView-interop
-    implementation(libs.mp.android.chart)
+    // mp.android.chart удалён — графики реализованы через Compose Canvas
 }

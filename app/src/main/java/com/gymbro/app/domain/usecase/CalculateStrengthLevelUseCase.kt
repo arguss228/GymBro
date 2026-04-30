@@ -37,7 +37,7 @@ class CalculateStrengthLevelUseCase @Inject constructor(
 
         val baseline = levelRepo.getLatestLevel()
 
-        val best5RM: Map<BigThreeLift, Double> = BigThreeLift.values().associateWith { lift ->
+        val best1RM: Map<BigThreeLift, Double> = BigThreeLift.values().associateWith { lift ->
             val fromHistory = progressRepo.getMax5Rm(lift.seedId, sinceMillis) ?: 0.0
             val fromBaseline = baseline?.let {
                 when (lift) {
@@ -49,20 +49,20 @@ class CalculateStrengthLevelUseCase @Inject constructor(
             maxOf(fromHistory, fromBaseline)
         }
 
-        val levelByLift: Map<BigThreeLift, Int> = best5RM.mapValues { (lift, weight) ->
+        val levelByLift: Map<BigThreeLift, Int> = best1RM.mapValues { (lift, weight) ->
             highestLevelFor(lift, weight)
         }
 
         val overallLevel = levelByLift.values.min().coerceIn(1, StrengthLevel.MAX_LEVEL)
-        val progressToNext = computeProgressToNext(overallLevel, best5RM)
-        val kgToNext = computeKgToNext(overallLevel, best5RM)
+        val progressToNext = computeProgressToNext(overallLevel, best1RM)
+        val kgToNext = computeKgToNext(overallLevel, best1RM)
 
         val result = StrengthLevel(
             level = overallLevel,
             tier = LevelTier.of(overallLevel),
             progressToNext = progressToNext,
             kgToNextByLift = kgToNext,
-            best5RM = best5RM,
+            best1RM = best1RM,
         )
 
         // FIX: сохраняем новую запись только если:
@@ -78,9 +78,9 @@ class CalculateStrengthLevelUseCase @Inject constructor(
             levelRepo.recordLevel(
                 LevelProgressEntity(
                     level = overallLevel,
-                    bench5RmKg    = best5RM[BigThreeLift.BENCH_PRESS] ?: 0.0,
-                    squat5RmKg    = best5RM[BigThreeLift.BACK_SQUAT]  ?: 0.0,
-                    deadlift5RmKg = best5RM[BigThreeLift.DEADLIFT]    ?: 0.0,
+                    bench1RmKg    = best1RM[BigThreeLift.BENCH_PRESS] ?: 0.0,
+                    squat1RmKg    = best1RM[BigThreeLift.BACK_SQUAT]  ?: 0.0,
+                    deadlift1RmKg = best1RM[BigThreeLift.DEADLIFT]    ?: 0.0,
                     // Показываем анимацию только при ПОВЫШЕНИИ уровня
                     // (previousLevel < overallLevel, а не >= как раньше).
                     // FIX: оригинальная логика была инвертирована:
@@ -109,7 +109,7 @@ class CalculateStrengthLevelUseCase @Inject constructor(
 
     private fun computeProgressToNext(
         currentLevel: Int,
-        best5RM: Map<BigThreeLift, Double>,
+        best1RM: Map<BigThreeLift, Double>,
     ): Float {
         if (currentLevel >= StrengthLevel.MAX_LEVEL) return 1f
 
@@ -119,7 +119,7 @@ class CalculateStrengthLevelUseCase @Inject constructor(
         var gained   = 0.0
         var required = 0.0
         BigThreeLift.values().forEach { lift ->
-            val best      = best5RM[lift] ?: 0.0
+            val best      = best1RM[lift] ?: 0.0
             val curTarget = when (lift) {
                 BigThreeLift.BENCH_PRESS -> current.bench
                 BigThreeLift.BACK_SQUAT  -> current.squat
@@ -142,14 +142,14 @@ class CalculateStrengthLevelUseCase @Inject constructor(
 
     private fun computeKgToNext(
         currentLevel: Int,
-        best5RM: Map<BigThreeLift, Double>,
+        best1RM: Map<BigThreeLift, Double>,
     ): Map<BigThreeLift, Double> {
         if (currentLevel >= StrengthLevel.MAX_LEVEL) {
             return BigThreeLift.values().associateWith { 0.0 }
         }
         val next = LevelThresholds.targetsFor(currentLevel + 1)
         return BigThreeLift.values().associateWith { lift ->
-            val best   = best5RM[lift] ?: 0.0
+            val best   = best1RM[lift] ?: 0.0
             val target = when (lift) {
                 BigThreeLift.BENCH_PRESS -> next.bench
                 BigThreeLift.BACK_SQUAT  -> next.squat
