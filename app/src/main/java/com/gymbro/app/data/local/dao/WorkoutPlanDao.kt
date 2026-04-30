@@ -6,8 +6,6 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
-import com.gymbro.app.data.local.entity.TrainingDayEntity
-import com.gymbro.app.data.local.entity.TrainingDayExerciseEntity
 import com.gymbro.app.data.local.entity.WorkoutPlanEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -49,55 +47,4 @@ interface WorkoutPlanDao {
 
     @Query("SELECT COUNT(*) FROM workout_plans WHERE isPreset = 1")
     suspend fun presetCount(): Int
-}
-
-@Dao
-interface TrainingDayDao {
-
-    @Query("SELECT * FROM training_days WHERE plan_id = :planId ORDER BY orderIndex ASC")
-    fun observeDaysForPlan(planId: Long): Flow<List<TrainingDayEntity>>
-
-    @Query("SELECT * FROM training_days WHERE plan_id = :planId ORDER BY orderIndex ASC")
-    suspend fun getDaysForPlan(planId: Long): List<TrainingDayEntity>
-
-    @Query("SELECT * FROM training_day_exercises WHERE day_id = :dayId ORDER BY order_index ASC")
-    fun observeExercisesForDay(dayId: Long): Flow<List<TrainingDayExerciseEntity>>
-
-    @Query("SELECT * FROM training_day_exercises WHERE day_id = :dayId ORDER BY order_index ASC")
-    suspend fun getExercisesForDay(dayId: Long): List<TrainingDayExerciseEntity>
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertDay(day: TrainingDayEntity): Long
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertDays(days: List<TrainingDayEntity>): List<Long>
-
-    @Update
-    suspend fun updateDay(day: TrainingDayEntity)
-
-    @Query("DELETE FROM training_days WHERE id = :dayId")
-    suspend fun deleteDay(dayId: Long)
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertDayExercise(exercise: TrainingDayExerciseEntity): Long
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertDayExercises(exercises: List<TrainingDayExerciseEntity>): List<Long>
-
-    @Query("DELETE FROM training_day_exercises WHERE day_id = :dayId")
-    suspend fun clearDayExercises(dayId: Long)
-
-    /**
-     * Полностью перезаписывает дни плана:
-     * 1. Удаляет все существующие дни (каскадно удалятся и упражнения).
-     * 2. Вставляет новые дни с обновлёнными orderIndex.
-     */
-    @Transaction
-    suspend fun replaceDaysForPlan(planId: Long, days: List<TrainingDayEntity>): List<Long> {
-        deleteDaysForPlan(planId)
-        return insertDays(days)
-    }
-
-    @Query("DELETE FROM training_days WHERE plan_id = :planId")
-    suspend fun deleteDaysForPlan(planId: Long)
 }

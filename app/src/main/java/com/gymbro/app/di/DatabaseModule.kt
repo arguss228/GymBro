@@ -34,7 +34,7 @@ object DatabaseModule {
             GymBroDatabase::class.java,
             GymBroDatabase.DATABASE_NAME
         )
-            .fallbackToDestructiveMigration() // для MVP; заменить на миграции для продакшена
+            .fallbackToDestructiveMigration()
             .build()
     }
 
