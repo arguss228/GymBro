@@ -42,22 +42,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-
 import com.gymbro.app.domain.model.LevelTier
-import com.gymbro.app.domain.model.StrengthRank          // ← новый импорт
 import com.gymbro.app.ui.components.ActionCard
-import com.gymbro.app.ui.components.LevelCard
-import com.gymbro.app.ui.components.RankDashboardCard     // ← новый импорт (если лежит в components)
-
-// Если RankUpDialog лежит в другом месте, добавь его импорт тоже
-// import com.gymbro.app.ui.components.RankUpDialog
+import com.gymbro.app.ui.rank.RankDashboardCard
+import com.gymbro.app.ui.rank.RankUpDialog
 
 @Composable
 fun DashboardScreen(
@@ -66,7 +59,7 @@ fun DashboardScreen(
     onOpenProgress: () -> Unit,
     onOpenExercises: () -> Unit,
     onOpenSettings: () -> Unit,
-    onOpenRanks: () -> Unit,                    // ← добавь этот параметр
+    onOpenRanks: () -> Unit,
     viewModel: DashboardViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -76,7 +69,9 @@ fun DashboardScreen(
     ) { inner ->
         if (state.isLoading) {
             Box(
-                modifier = Modifier.fillMaxSize().padding(inner),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(inner),
                 contentAlignment = Alignment.Center,
             ) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
@@ -92,10 +87,9 @@ fun DashboardScreen(
             onOpenProgress = onOpenProgress,
             onOpenExercises = onOpenExercises,
             onOpenSettings = onOpenSettings,
-            onOpenRanks = onOpenRanks,               // ← передаём дальше
+            onOpenRanks = onOpenRanks,
         )
 
-        // Level up диалог (старый)
         state.pendingCelebration?.let { pending ->
             LevelUpDialog(
                 newLevel = pending.level,
@@ -103,7 +97,6 @@ fun DashboardScreen(
             )
         }
 
-        // Новый Rank Up диалог
         state.showRankUp?.let { newRank ->
             RankUpDialog(
                 newRank = newRank,
@@ -122,7 +115,7 @@ private fun DashboardContent(
     onOpenProgress: () -> Unit,
     onOpenExercises: () -> Unit,
     onOpenSettings: () -> Unit,
-    onOpenRanks: () -> Unit,                     // ← новый параметр
+    onOpenRanks: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -132,7 +125,6 @@ private fun DashboardContent(
             .padding(horizontal = 20.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        // ── Top bar: greeting + settings ──────────────────────────
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -166,16 +158,13 @@ private fun DashboardContent(
             }
         }
 
-        // ← Здесь была LevelCard, теперь заменяем на RankDashboardCard
         RankDashboardCard(
             state = state.rankState,
             onOpenRanks = onOpenRanks,
         )
 
-        // ── Stats strip ───────────────────────────────────────────
         StatsStrip(totalSessions = state.totalSessions)
 
-        // ── Primary CTA ───────────────────────────────────────────
         Button(
             onClick = onStartWorkout,
             modifier = Modifier
@@ -201,7 +190,6 @@ private fun DashboardContent(
             )
         }
 
-        // Остальные карточки без изменений...
         ActionCard(
             title = "Мои планы",
             subtitle = "Выбрать готовый или создать свой",
@@ -230,8 +218,6 @@ private fun DashboardContent(
     }
 }
 
-// ── Stats strip ───────────────────────────────────────────────────
-
 @Composable
 private fun StatsStrip(totalSessions: Int) {
     Surface(
@@ -244,7 +230,6 @@ private fun StatsStrip(totalSessions: Int) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            // Sessions icon
             Box(
                 modifier = Modifier
                     .size(36.dp)
@@ -277,8 +262,6 @@ private fun StatsStrip(totalSessions: Int) {
     }
 }
 
-// ── Level up dialog ───────────────────────────────────────────────
-
 @Composable
 private fun LevelUpDialog(newLevel: Int, onDismiss: () -> Unit) {
     val scale by animateFloatAsState(
@@ -294,7 +277,9 @@ private fun LevelUpDialog(newLevel: Int, onDismiss: () -> Unit) {
                 imageVector = Icons.Default.Celebration,
                 contentDescription = null,
                 tint = LevelTier.of(newLevel).primary,
-                modifier = Modifier.size(56.dp).scale(scale),
+                modifier = Modifier
+                    .size(56.dp)
+                    .scale(scale),
             )
         },
         title = {
@@ -328,14 +313,12 @@ private fun LevelUpDialog(newLevel: Int, onDismiss: () -> Unit) {
     )
 }
 
-// ── Helpers ───────────────────────────────────────────────────────
-
 private fun greeting(name: String?): String {
     val base = when (java.time.LocalTime.now().hour) {
-        in 5..11  -> "Доброе утро"
+        in 5..11 -> "Доброе утро"
         in 12..17 -> "Добрый день"
         in 18..22 -> "Добрый вечер"
-        else      -> "Привет"
+        else -> "Привет"
     }
     return if (name.isNullOrBlank()) "$base!" else "$base, $name!"
 }

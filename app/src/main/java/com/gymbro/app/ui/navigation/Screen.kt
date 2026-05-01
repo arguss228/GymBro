@@ -3,6 +3,7 @@ package com.gymbro.app.ui.navigation
 sealed class Screen(val route: String) {
     data object Splash         : Screen("splash")
     data object Onboarding     : Screen("onboarding")
+    data object Enter1Rm       : Screen("enter_1rm")
     data object Dashboard      : Screen("dashboard")
     data object Plans          : Screen("plans")
     data object StrengthRanks  : Screen("strength_ranks")

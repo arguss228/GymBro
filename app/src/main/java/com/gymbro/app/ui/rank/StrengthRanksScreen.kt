@@ -269,25 +269,24 @@ private fun CloudsDivider(cloudOffset: Float) {
     }
 }
 
-private fun DrawScope.drawClouds(offset: Float) {
+ private fun DrawScope.drawClouds(offset: Float) {
     val w = size.width; val h = size.height * 0.45f
     val cloudColor = Color.White.copy(alpha = 0.08f)
     val shift = (offset * w * 0.3f) % (w * 0.5f)
 
-    // Несколько эллипсов-облаков
+    data class Cloud(val center: Offset, val rx: Float, val ry: Float)
+
     listOf(
-        listOf(Offset(-shift + w * 0.1f, h), 80f, 30f),
-        listOf(Offset(-shift + w * 0.35f, h * 0.8f), 120f, 40f),
-        listOf(Offset(-shift + w * 0.6f, h), 90f, 35f),
-        listOf(Offset(-shift + w * 0.85f, h * 0.85f), 100f, 38f),
-        listOf(Offset(-shift + w * 1.1f, h), 80f, 30f),
-    ).forEach { params ->
-        @Suppress("UNCHECKED_CAST")
-        val (center, rx, ry) = params as List<Any>
+        Cloud(Offset(-shift + w * 0.1f,  h),        80f, 30f),
+        Cloud(Offset(-shift + w * 0.35f, h * 0.8f), 120f, 40f),
+        Cloud(Offset(-shift + w * 0.6f,  h),        90f, 35f),
+        Cloud(Offset(-shift + w * 0.85f, h * 0.85f),100f, 38f),
+        Cloud(Offset(-shift + w * 1.1f,  h),        80f, 30f),
+    ).forEach { cloud ->
         drawOval(
-            color     = cloudColor,
-            topLeft   = Offset((center as Offset).x - rx as Float, center.y - ry as Float),
-            size      = androidx.compose.ui.geometry.Size(rx * 2f, ry * 2f),
+            color   = cloudColor,
+            topLeft = Offset(cloud.center.x - cloud.rx, cloud.center.y - cloud.ry),
+            size    = androidx.compose.ui.geometry.Size(cloud.rx * 2f, cloud.ry * 2f),
         )
     }
 }

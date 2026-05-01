@@ -23,12 +23,12 @@ import kotlinx.coroutines.delay
 @Composable
 fun SplashScreen(
     onOnboardingNeeded: () -> Unit,
-    onEnter1Rm: () -> Unit,        // ← Новый параметр
+    onEnter1Rm: () -> Unit,
     onReady: () -> Unit,
     viewModel: SplashViewModel = hiltViewModel(),
 ) {
     LaunchedEffect(Unit) {
-        delay(600) // небольшая задержка для красивого показа сплеша
+        delay(600)
 
         val onboardingDone = viewModel.isOnboardingCompleted()
 
@@ -37,17 +37,14 @@ fun SplashScreen(
             return@LaunchedEffect
         }
 
-        // Если онбординг пройден — проверяем, ввёл ли пользователь 1RM
         if (viewModel.needsOneRmEntry()) {
             onEnter1Rm()
             return@LaunchedEffect
         }
 
-        // Если всё уже есть — переходим в главное приложение
         onReady()
     }
 
-    // UI остаётся без изменений
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,

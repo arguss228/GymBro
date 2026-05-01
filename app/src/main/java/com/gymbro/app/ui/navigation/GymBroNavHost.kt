@@ -21,18 +21,18 @@ import com.gymbro.app.ui.onboarding.OnboardingScreen
 import com.gymbro.app.ui.planeditor.PlanEditorScreen
 import com.gymbro.app.ui.plans.PlansScreen
 import com.gymbro.app.ui.progress.ProgressScreen
+import com.gymbro.app.ui.rank.Enter1RmScreen
+import com.gymbro.app.ui.rank.StrengthRanksScreen
 import com.gymbro.app.ui.settings.SettingsScreen
 import com.gymbro.app.ui.splash.SplashScreen
 import com.gymbro.app.ui.workout.WorkoutSessionScreen
 
-// Shared transition durations
 private const val NAV_ANIM_MS = 350
 
 @Composable
 fun GymBroNavHost() {
     val nav = rememberNavController()
 
-    // Default enter/exit transitions — horizontal slide + fade
     val slideIn: AnimatedContentTransitionScope<*>.() -> EnterTransition = {
         slideInHorizontally(tween(NAV_ANIM_MS)) { it / 3 } + fadeIn(tween(NAV_ANIM_MS))
     }
@@ -47,12 +47,12 @@ fun GymBroNavHost() {
     }
 
     NavHost(
-        navController    = nav,
+        navController = nav,
         startDestination = Screen.Splash.route,
-        enterTransition  = slideIn,
-        exitTransition   = slideOut,
+        enterTransition = slideIn,
+        exitTransition = slideOut,
         popEnterTransition = popEnter,
-        popExitTransition  = popExit,
+        popExitTransition = popExit,
     ) {
 
         // ── Splash ────────────────────────────────────────────────
@@ -60,6 +60,11 @@ fun GymBroNavHost() {
             SplashScreen(
                 onOnboardingNeeded = {
                     nav.navigate(Screen.Onboarding.route) {
+                        popUpTo(Screen.Splash.route) { inclusive = true }
+                    }
+                },
+                onEnter1Rm = {
+                    nav.navigate(Screen.Enter1Rm.route) {
                         popUpTo(Screen.Splash.route) { inclusive = true }
                     }
                 },
@@ -75,8 +80,19 @@ fun GymBroNavHost() {
         composable(Screen.Onboarding.route) {
             OnboardingScreen(
                 onFinished = {
-                    nav.navigate(Screen.Dashboard.route) {
+                    nav.navigate(Screen.Enter1Rm.route) {
                         popUpTo(Screen.Onboarding.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // ── Enter 1RM ─────────────────────────────────────────────
+        composable(Screen.Enter1Rm.route) {
+            Enter1RmScreen(
+                onDone = {
+                    nav.navigate(Screen.Dashboard.route) {
+                        popUpTo(Screen.Enter1Rm.route) { inclusive = true }
                     }
                 }
             )
@@ -85,11 +101,11 @@ fun GymBroNavHost() {
         // ── Dashboard ─────────────────────────────────────────────
         composable(Screen.Dashboard.route) {
             DashboardScreen(
-                onStartWorkout  = { sessionId -> nav.navigate(Screen.WorkoutSession.build(sessionId)) },
-                onOpenPlans     = { nav.navigate(Screen.Plans.route) },
-                onOpenProgress  = { nav.navigate(Screen.Progress.route) },
+                onStartWorkout = { sessionId -> nav.navigate(Screen.WorkoutSession.build(sessionId)) },
+                onOpenPlans = { nav.navigate(Screen.Plans.route) },
+                onOpenProgress = { nav.navigate(Screen.Progress.route) },
                 onOpenExercises = { nav.navigate(Screen.Exercises.route) },
-                onOpenSettings  = { nav.navigate(Screen.Settings.route) },
+                onOpenSettings = { nav.navigate(Screen.Settings.route) },
                 onOpenRanks = { nav.navigate(Screen.StrengthRanks.route) },
             )
         }
@@ -97,17 +113,17 @@ fun GymBroNavHost() {
         // ── Plans ─────────────────────────────────────────────────
         composable(Screen.Plans.route) {
             PlansScreen(
-                onBack       = { nav.popBackStack() },
+                onBack = { nav.popBackStack() },
                 onCreatePlan = { nav.navigate(Screen.PlanEditor.build(null)) },
-                onEditPlan   = { id -> nav.navigate(Screen.PlanEditor.build(id)) },
+                onEditPlan = { id -> nav.navigate(Screen.PlanEditor.build(id)) },
             )
         }
 
         // ── Plan Editor ───────────────────────────────────────────
         composable(
-            route     = Screen.PlanEditor.route,
+            route = Screen.PlanEditor.route,
             arguments = listOf(navArgument("planId") {
-                type         = NavType.LongType
+                type = NavType.LongType
                 defaultValue = -1L
             }),
         ) {
@@ -117,14 +133,14 @@ fun GymBroNavHost() {
         // ── Exercises list ────────────────────────────────────────
         composable(Screen.Exercises.route) {
             ExercisesScreen(
-                onBack          = { nav.popBackStack() },
+                onBack = { nav.popBackStack() },
                 onExerciseClick = { id -> nav.navigate(Screen.ExerciseDetail.build(id)) },
             )
         }
 
         // ── Exercise detail ───────────────────────────────────────
         composable(
-            route     = Screen.ExerciseDetail.route,
+            route = Screen.ExerciseDetail.route,
             arguments = listOf(navArgument(Screen.ExerciseDetail.ARG_EXERCISE_ID) {
                 type = NavType.LongType
             }),
@@ -134,7 +150,7 @@ fun GymBroNavHost() {
 
         // ── Workout session ───────────────────────────────────────
         composable(
-            route     = Screen.WorkoutSession.route,
+            route = Screen.WorkoutSession.route,
             arguments = listOf(navArgument(Screen.WorkoutSession.ARG_SESSION_ID) {
                 type = NavType.LongType
             }),
@@ -151,8 +167,10 @@ fun GymBroNavHost() {
         composable(Screen.Settings.route) {
             SettingsScreen(onBack = { nav.popBackStack() })
         }
+
+        // ── Strength Ranks ────────────────────────────────────────
         composable(Screen.StrengthRanks.route) {
             StrengthRanksScreen(onBack = { nav.popBackStack() })
-}
+        }
     }
 }

@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.gymbro.app.data.local.GymBroDatabase
 import com.gymbro.app.data.local.dao.ExerciseDao
 import com.gymbro.app.data.local.dao.LevelProgressDao
+import com.gymbro.app.data.local.dao.OneRmDao
 import com.gymbro.app.data.local.dao.PersonalRecordDao
 import com.gymbro.app.data.local.dao.SetLogDao
 import com.gymbro.app.data.local.dao.TrainingDayDao
