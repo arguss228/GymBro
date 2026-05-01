@@ -1,29 +1,60 @@
 package com.gymbro.app.ui.rank
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.EaseInOutSine
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.*
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
@@ -32,60 +63,97 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.gymbro.app.data.repository.RankState
 import com.gymbro.app.domain.model.RankGroup
 import com.gymbro.app.domain.model.StrengthRank
 import com.gymbro.app.domain.model.StrengthRanks
-import kotlin.math.sin
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StrengthRanksScreen(
     onBack: () -> Unit,
     viewModel: RankViewModel = hiltViewModel(),
 ) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
+    val state by viewModel.rankState.collectAsStateWithLifecycle()
 
-    // Ранги снизу вверх: Дерево внизу, Божество вверху при скролле вверх
-    val ranksBottomToTop = remember { StrengthRanks.all.reversed() }
-    var expandedRankName by remember { mutableStateOf<String?>(null) }
+    // Список снизу вверх: Дерево отображается последним в LazyColumn (внизу при скролле)
+    // reverseLayout = true: первый элемент списка — внизу экрана
+    val allRanks = remember { StrengthRanks.all } // Дерево[0] → Божество[11]
+    var expandedName by remember { mutableStateOf<String?>(null) }
 
-    // Infinite animation for clouds divider
-    val infiniteTransition = rememberInfiniteTransition(label = "clouds")
-    val cloudOffset by infiniteTransition.animateFloat(
+    val infiniteTransition = rememberInfiniteTransition(label = "clouds_anim")
+    val cloudShift by infiniteTransition.animateFloat(
         initialValue  = 0f,
         targetValue   = 1f,
-        animationSpec = infiniteRepeatable(tween(8000, easing = LinearEasing)),
-        label         = "cloudOffset",
+        animationSpec = infiniteRepeatable(tween(10000, easing = LinearEasing)),
+        label         = "cloud_shift",
     )
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF070B14))
+            .background(Color(0xFF050810)),
     ) {
         LazyColumn(
             modifier       = Modifier.fillMaxSize(),
-            reverseLayout  = false, // Список идёт сверху вниз, но наполнен снизу-вверх
-            contentPadding = PaddingValues(bottom = 32.dp),
+            reverseLayout  = true,          // Дерево — внизу, Божество — вверху
+            contentPadding = PaddingValues(bottom = 80.dp, top = 0.dp),
         ) {
-            // TopBar
-            item {
+
+            // ── ЗЕМНАЯ ГРУППА (рисуется снизу) ───────────────────
+            items(
+                allRanks.filter { it.group == RankGroup.EARTH },
+                key = { it.name },
+            ) { rank ->
+                EarthBackground {
+                    RankCard(
+                        rank          = rank,
+                        isCurrentRank = rank.name == state.currentRank.name,
+                        isExpanded    = expandedName == rank.name,
+                        onClick       = {
+                            expandedName = if (expandedName == rank.name) null else rank.name
+                        },
+                        modifier      = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                    )
+                }
+            }
+
+            // ── РАЗДЕЛИТЕЛЬ: Земля → Небо (облака) ───────────────
+            item(key = "divider") {
+                CloudsToSkyDivider(shift = cloudShift)
+            }
+
+            // ── НЕБЕСНАЯ ГРУППА (рисуется выше) ──────────────────
+            items(
+                allRanks.filter { it.group == RankGroup.HEAVEN },
+                key = { it.name },
+            ) { rank ->
+                HeavenBackground {
+                    RankCard(
+                        rank          = rank,
+                        isCurrentRank = rank.name == state.currentRank.name,
+                        isExpanded    = expandedName == rank.name,
+                        onClick       = {
+                            expandedName = if (expandedName == rank.name) null else rank.name
+                        },
+                        modifier      = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                    )
+                }
+            }
+
+            // ── TopBar (при reverseLayout — рисуется последним = вверху) ──
+            item(key = "topbar") {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(
-                            Brush.verticalGradient(
-                                listOf(Color(0xFF070B14), Color.Transparent)
-                            )
+                            Brush.verticalGradient(listOf(Color(0xFF050810), Color(0xFF0A1428), Color.Transparent))
                         )
-                        .padding(top = 56.dp, start = 16.dp, end = 16.dp, bottom = 8.dp),
+                        .padding(top = 52.dp, start = 8.dp, end = 16.dp, bottom = 16.dp),
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         IconButton(onClick = onBack) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = Color.White)
                         }
-                        Spacer(Modifier.width(8.dp))
+                        Spacer(Modifier.width(4.dp))
                         Column {
                             Text(
                                 "Система рангов",
@@ -94,408 +162,279 @@ fun StrengthRanksScreen(
                                 color      = Color.White,
                             )
                             Text(
-                                "Прогрессия по 1RM · текущий: ${state.currentRank.symbol} ${state.currentRank.name}",
+                                "${state.currentRank.symbol} ${state.currentRank.name}  ·  прогрессия по 1RM",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Color.White.copy(alpha = 0.5f),
+                                color = Color.White.copy(alpha = 0.45f),
                             )
                         }
                     }
                 }
             }
-
-            // Небесные ранги (вверху экрана — при reverseLayout=false небо "выше")
-            val heavenRanks = ranksBottomToTop.filter { it.group == RankGroup.HEAVEN }
-            val earthRanks  = ranksBottomToTop.filter { it.group == RankGroup.EARTH }
-
-            // Небесный фон-заголовок
-            item {
-                HeavenHeaderSection()
-            }
-
-            items(heavenRanks, key = { it.name }) { rank ->
-                RankCardItem(
-                    rank          = rank,
-                    isCurrentRank = rank.name == state.currentRank.name,
-                    isExpanded    = expandedRankName == rank.name,
-                    onClick       = {
-                        expandedRankName = if (expandedRankName == rank.name) null else rank.name
-                    },
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
-                )
-            }
-
-            // Разделитель Земля → Небо (облака)
-            item {
-                CloudsDivider(cloudOffset = cloudOffset)
-            }
-
-            // Земные ранги
-            items(earthRanks, key = { it.name }) { rank ->
-                RankCardItem(
-                    rank          = rank,
-                    isCurrentRank = rank.name == state.currentRank.name,
-                    isExpanded    = expandedRankName == rank.name,
-                    onClick       = {
-                        expandedRankName = if (expandedRankName == rank.name) null else rank.name
-                    },
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
-                )
-            }
-
-            // Земной фон-подвал
-            item {
-                EarthFooterSection()
-            }
         }
     }
 }
 
-// ── Heaven header ─────────────────────────────────────────────────
+// ── Обёртки фона ──────────────────────────────────────────────────
 
 @Composable
-private fun HeavenHeaderSection() {
+private fun EarthBackground(content: @Composable () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(120.dp)
             .background(
                 Brush.verticalGradient(
-                    listOf(
-                        Color(0xFF0D1B4A),
-                        Color(0xFF1A1040),
-                        Color(0xFF070B14),
-                    )
+                    listOf(Color(0xFF0E1A0E), Color(0xFF0A130A))
+                )
+            )
+            .drawBehind {
+                // Каменная текстура — горизонтальные линии
+                val lineColor = Color(0xFF1A3A1A).copy(alpha = 0.3f)
+                for (i in 0..8) {
+                    val y = i * 12.dp.toPx()
+                    drawLine(lineColor, Offset(0f, y), Offset(size.width, y), 0.5.dp.toPx())
+                }
+            },
+    ) { content() }
+}
+
+@Composable
+private fun HeavenBackground(content: @Composable () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                Brush.verticalGradient(
+                    listOf(Color(0xFF050820), Color(0xFF0A1035))
                 )
             )
             .drawBehind {
                 // Звёзды
                 val stars = listOf(
-                    Offset(size.width * 0.1f, size.height * 0.2f),
-                    Offset(size.width * 0.3f, size.height * 0.5f),
-                    Offset(size.width * 0.55f, size.height * 0.15f),
-                    Offset(size.width * 0.7f, size.height * 0.6f),
-                    Offset(size.width * 0.85f, size.height * 0.3f),
-                    Offset(size.width * 0.45f, size.height * 0.75f),
-                    Offset(size.width * 0.92f, size.height * 0.7f),
+                    0.05f to 0.2f, 0.18f to 0.7f, 0.32f to 0.15f,
+                    0.47f to 0.55f, 0.61f to 0.3f, 0.75f to 0.8f,
+                    0.88f to 0.1f, 0.93f to 0.6f,
                 )
-                stars.forEach { pos ->
-                    drawCircle(Color.White.copy(alpha = 0.6f), radius = 2.dp.toPx(), center = pos)
-                    drawCircle(Color.White.copy(alpha = 0.15f), radius = 6.dp.toPx(), center = pos)
+                stars.forEach { (xRatio, yRatio) ->
+                    val pos = Offset(size.width * xRatio, size.height * yRatio)
+                    drawCircle(Color.White.copy(alpha = 0.5f), 1.5.dp.toPx(), pos)
+                    drawCircle(Color.White.copy(alpha = 0.1f), 4.dp.toPx(), pos)
                 }
-                // Золотое сияние сверху
-                drawRect(
-                    brush = Brush.verticalGradient(
-                        listOf(Color(0xFFFFD700).copy(alpha = 0.08f), Color.Transparent),
-                        startY = 0f, endY = size.height,
-                    )
-                )
             },
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("✨", fontSize = 28.sp)
-            Spacer(Modifier.height(4.dp))
-            Text(
-                "НЕБЕСНЫЕ РАНГИ",
-                style         = MaterialTheme.typography.labelLarge,
-                fontWeight    = FontWeight.Black,
-                color         = Color(0xFFFFD700).copy(alpha = 0.7f),
-                letterSpacing = 3.sp,
-            )
-        }
-    }
+    ) { content() }
 }
 
-// ── Clouds divider ────────────────────────────────────────────────
+// ── Разделитель облака ────────────────────────────────────────────
 
 @Composable
-private fun CloudsDivider(cloudOffset: Float) {
+private fun CloudsToSkyDivider(shift: Float) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(180.dp)
+            .height(200.dp)
             .drawWithContent {
-                // Sky → Earth gradient
+                // Фон — переход земля → небо
                 drawRect(
-                    brush = Brush.verticalGradient(
+                    Brush.verticalGradient(
                         listOf(
-                            Color(0xFF0D1B4A),
-                            Color(0xFF1A3A5C),
-                            Color(0xFF2D4A3E),
-                            Color(0xFF1A2E1A),
+                            Color(0xFF050820), // небо (вверху при reverseLayout)
+                            Color(0xFF0A2040),
+                            Color(0xFF0D3020),
+                            Color(0xFF0A1A0A), // земля (внизу)
                         )
                     )
                 )
-                // Animated cloud shapes
-                drawClouds(cloudOffset)
-                // Glowing horizon line
-                drawRect(
-                    color  = Color(0xFF00E5FF).copy(alpha = 0.3f),
-                    topLeft = Offset(0f, size.height * 0.5f),
-                    size   = androidx.compose.ui.geometry.Size(size.width, 2.dp.toPx()),
+                // Горизонт — светящаяся линия
+                val horizY = size.height * 0.5f
+                drawLine(
+                    brush       = Brush.horizontalGradient(
+                        listOf(Color.Transparent, Color(0xFF00E5FF).copy(alpha = 0.5f), Color.Transparent)
+                    ),
+                    start       = Offset(0f, horizY),
+                    end         = Offset(size.width, horizY),
+                    strokeWidth = 1.5.dp.toPx(),
                 )
-                // Reflection below
-                drawRect(
-                    brush = Brush.verticalGradient(
-                        listOf(Color(0xFF00E5FF).copy(alpha = 0.05f), Color.Transparent),
-                        startY = size.height * 0.5f, endY = size.height,
-                    )
-                )
+                // Облака анимированные
+                drawAnimatedClouds(shift)
                 drawContent()
-            }
+            },
+        contentAlignment = Alignment.Center,
     ) {
+        // Центральный бейдж без текста групп
         Box(
-            modifier          = Modifier.fillMaxSize(),
-            contentAlignment  = Alignment.Center,
+            modifier = Modifier
+                .clip(RoundedCornerShape(50))
+                .background(Color(0xFF00E5FF).copy(alpha = 0.08f))
+                .border(1.dp, Color(0xFF00E5FF).copy(alpha = 0.25f), RoundedCornerShape(50))
+                .padding(horizontal = 24.dp, vertical = 10.dp),
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Spacer(Modifier.height(20.dp))
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(Color(0xFF00E5FF).copy(alpha = 0.1f))
-                        .border(1.dp, Color(0xFF00E5FF).copy(alpha = 0.3f), RoundedCornerShape(20.dp))
-                        .padding(horizontal = 20.dp, vertical = 8.dp),
-                ) {
-                    Text(
-                        "⬆  Небесные ранги          Земные ранги  ⬇",
-                        style         = MaterialTheme.typography.labelSmall,
-                        color         = Color(0xFF00E5FF).copy(alpha = 0.8f),
-                        letterSpacing = 0.5.sp,
-                    )
-                }
-            }
+            Text("☁️  ✨  ☁️", fontSize = 20.sp)
         }
     }
 }
 
- private fun DrawScope.drawClouds(offset: Float) {
-    val w = size.width; val h = size.height * 0.45f
-    val cloudColor = Color.White.copy(alpha = 0.08f)
-    val shift = (offset * w * 0.3f) % (w * 0.5f)
+private fun DrawScope.drawAnimatedClouds(shift: Float) {
+    val w = size.width
+    val cloudY = size.height * 0.42f
+    val cloudColor = Color.White.copy(alpha = 0.06f)
+    val dx = (shift * w * 0.25f) % (w * 0.4f)
 
-    data class Cloud(val center: Offset, val rx: Float, val ry: Float)
-
+    // Несколько облаков-эллипсов
     listOf(
-        Cloud(Offset(-shift + w * 0.1f,  h),        80f, 30f),
-        Cloud(Offset(-shift + w * 0.35f, h * 0.8f), 120f, 40f),
-        Cloud(Offset(-shift + w * 0.6f,  h),        90f, 35f),
-        Cloud(Offset(-shift + w * 0.85f, h * 0.85f),100f, 38f),
-        Cloud(Offset(-shift + w * 1.1f,  h),        80f, 30f),
-    ).forEach { cloud ->
+        Triple(-dx + w * 0.05f, cloudY,         60f to 22f),
+        Triple(-dx + w * 0.28f, cloudY * 0.85f, 90f to 32f),
+        Triple(-dx + w * 0.55f, cloudY,         75f to 26f),
+        Triple(-dx + w * 0.78f, cloudY * 0.9f,  85f to 30f),
+        Triple(-dx + w * 1.05f, cloudY,         60f to 22f),
+        // Второй слой (медленнее)
+        Triple(dx * 0.5f + w * 0.15f, cloudY * 1.15f, 50f to 18f),
+        Triple(dx * 0.5f + w * 0.45f, cloudY * 1.2f,  70f to 25f),
+        Triple(dx * 0.5f + w * 0.72f, cloudY * 1.1f,  55f to 20f),
+    ).forEach { (cx, cy, size_) ->
+        val (rx, ry) = size_
         drawOval(
             color   = cloudColor,
-            topLeft = Offset(cloud.center.x - cloud.rx, cloud.center.y - cloud.ry),
-            size    = androidx.compose.ui.geometry.Size(cloud.rx * 2f, cloud.ry * 2f),
+            topLeft = Offset(cx - rx, cy - ry),
+            size    = Size(rx * 2f, ry * 2f),
         )
     }
 }
 
-// ── Earth footer ─────────────────────────────────────────────────
+// ── Карточка ранга ────────────────────────────────────────────────
 
 @Composable
-private fun EarthFooterSection() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(100.dp)
-            .background(
-                Brush.verticalGradient(
-                    listOf(
-                        Color(0xFF1A2E1A),
-                        Color(0xFF0D1F0D),
-                        Color(0xFF070B14),
-                    )
-                )
-            )
-            .drawBehind {
-                // Текстура земли — горизонтальные штрихи
-                val lineColor = Color(0xFF2E4A2E).copy(alpha = 0.4f)
-                for (i in 0..5) {
-                    val y = size.height * 0.3f + i * 8.dp.toPx()
-                    drawLine(lineColor, Offset(0f, y), Offset(size.width, y), strokeWidth = 1.dp.toPx())
-                }
-            }
-    )
-}
-
-// ── Rank card ─────────────────────────────────────────────────────
-
-@Composable
-private fun RankCardItem(
+private fun RankCard(
     rank: StrengthRank,
     isCurrentRank: Boolean,
     isExpanded: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val isHeaven = rank.group == RankGroup.HEAVEN
-    val bgColors = if (isHeaven) listOf(
-        Color(0xFF0D1B4A).copy(alpha = 0.9f),
-        rank.primaryColor.copy(alpha = 0.12f),
-    ) else listOf(
-        Color(0xFF1A2E1A).copy(alpha = 0.9f),
-        rank.primaryColor.copy(alpha = 0.10f),
-    )
-
     val infiniteTransition = rememberInfiniteTransition(label = "card_${rank.name}")
     val glowAlpha by infiniteTransition.animateFloat(
-        initialValue  = if (isCurrentRank) 0.4f else 0f,
-        targetValue   = if (isCurrentRank) 0.8f else 0f,
+        initialValue  = if (isCurrentRank) 0.35f else 0f,
+        targetValue   = if (isCurrentRank) 0.75f else 0f,
         animationSpec = infiniteRepeatable(tween(1800, easing = EaseInOutSine), RepeatMode.Reverse),
-        label         = "glow_${rank.name}",
+        label         = "card_glow_${rank.name}",
     )
 
-    Column(modifier = modifier) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(24.dp))
-                .background(Brush.linearGradient(bgColors))
-                .then(
-                    if (isCurrentRank) Modifier
-                        .border(
-                            2.dp,
-                            Brush.linearGradient(listOf(rank.primaryColor, rank.secondaryColor)),
-                            RoundedCornerShape(24.dp),
-                        )
-                        .drawBehind {
-                            drawRoundRect(
-                                color        = rank.glowColor.copy(alpha = glowAlpha * 0.3f),
-                                cornerRadius = androidx.compose.ui.geometry.CornerRadius(24.dp.toPx()),
-                                style        = Stroke(width = 8.dp.toPx()),
-                            )
-                        }
-                    else Modifier.border(
-                        1.dp,
-                        rank.primaryColor.copy(alpha = 0.2f),
-                        RoundedCornerShape(24.dp),
-                    )
-                )
-                .clickable { onClick() }
-                .padding(20.dp),
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
-                // Main row
-                Row(
-                    modifier              = Modifier.fillMaxWidth(),
-                    verticalAlignment     = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(20.dp),
-                ) {
-                    // Big symbol
-                    Box(
-                        modifier = Modifier
-                            .size(80.dp)
-                            .drawBehind {
-                                if (isCurrentRank) {
-                                    drawCircle(
-                                        color  = rank.glowColor.copy(alpha = glowAlpha * 0.5f),
-                                        radius = size.minDimension / 2f + 12.dp.toPx(),
-                                    )
-                                }
-                                drawCircle(
-                                    brush  = Brush.radialGradient(
-                                        listOf(
-                                            rank.primaryColor.copy(alpha = 0.2f),
-                                            Color.Transparent,
-                                        )
-                                    ),
-                                    radius = size.minDimension / 2f,
-                                )
-                            },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(rank.symbol, fontSize = 44.sp, textAlign = TextAlign.Center)
-                    }
+    val isHeaven = rank.group == RankGroup.HEAVEN
+    val cardBg   = if (isHeaven)
+        Brush.linearGradient(listOf(Color(0xFF0D1B4A).copy(alpha = 0.95f), rank.primaryColor.copy(alpha = 0.1f)))
+    else
+        Brush.linearGradient(listOf(Color(0xFF1A2A1A).copy(alpha = 0.95f), rank.primaryColor.copy(alpha = 0.08f)))
 
-                    Column(modifier = Modifier.weight(1f)) {
-                        if (isCurrentRank) {
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(rank.primaryColor.copy(alpha = 0.2f))
-                                    .padding(horizontal = 8.dp, vertical = 2.dp),
-                            ) {
-                                Text(
-                                    "ВАШ РАНГ",
-                                    style         = MaterialTheme.typography.labelSmall,
-                                    fontWeight    = FontWeight.ExtraBold,
-                                    color         = rank.primaryColor,
-                                    letterSpacing = 1.sp,
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(22.dp))
+            .background(cardBg)
+            .then(
+                if (isCurrentRank) Modifier
+                    .border(2.dp, Brush.horizontalGradient(listOf(rank.primaryColor, rank.secondaryColor)), RoundedCornerShape(22.dp))
+                    .drawBehind {
+                        drawRoundRect(
+                            color        = rank.glowColor.copy(alpha = glowAlpha * 0.35f),
+                            cornerRadius = CornerRadius(22.dp.toPx()),
+                            style        = Stroke(width = 8.dp.toPx()),
+                        )
+                    }
+                else Modifier.border(1.dp, rank.primaryColor.copy(alpha = 0.15f), RoundedCornerShape(22.dp))
+            )
+            .clickable { onClick() }
+            .padding(18.dp),
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
+
+            // Главная строка: символ + название
+            Row(
+                modifier              = Modifier.fillMaxWidth(),
+                verticalAlignment     = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(18.dp),
+            ) {
+                // Большой символ
+                Box(
+                    modifier = Modifier
+                        .size(76.dp)
+                        .drawBehind {
+                            if (isCurrentRank) {
+                                drawCircle(
+                                    color  = rank.glowColor.copy(alpha = glowAlpha * 0.5f),
+                                    radius = size.minDimension / 2f + 14.dp.toPx(),
                                 )
                             }
-                            Spacer(Modifier.height(4.dp))
-                        }
-                        Text(
-                            rank.name,
-                            style      = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Black,
-                            color      = rank.primaryColor,
-                        )
-                    }
+                            drawCircle(
+                                brush  = Brush.radialGradient(
+                                    listOf(rank.primaryColor.copy(alpha = 0.18f), Color.Transparent)
+                                ),
+                                radius = size.minDimension / 2f,
+                            )
+                        },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(rank.symbol, fontSize = 42.sp, textAlign = TextAlign.Center)
+                }
 
-                    Icon(
-                        if (isExpanded) Icons.Default.KeyboardArrowUp
-                        else Icons.Default.KeyboardArrowDown,
-                        contentDescription = null,
-                        tint     = rank.primaryColor.copy(alpha = 0.6f),
-                        modifier = Modifier.size(24.dp),
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    if (isCurrentRank) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(rank.primaryColor.copy(alpha = 0.18f))
+                                .padding(horizontal = 8.dp, vertical = 2.dp),
+                        ) {
+                            Text("ВАШ РАНГ", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.ExtraBold, color = rank.primaryColor, letterSpacing = 1.sp)
+                        }
+                    }
+                    Text(
+                        rank.name,
+                        style      = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Black,
+                        color      = rank.primaryColor,
                     )
                 }
 
-                // Expanded details
-                AnimatedVisibility(
-                    visible = isExpanded,
-                    enter   = expandVertically() + fadeIn(),
-                    exit    = shrinkVertically() + fadeOut(),
+                Icon(
+                    if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    null,
+                    tint     = rank.primaryColor.copy(alpha = 0.55f),
+                    modifier = Modifier.size(22.dp),
+                )
+            }
+
+            // Раскрываемая часть — детали
+            AnimatedVisibility(
+                visible = isExpanded,
+                enter   = expandVertically(tween(300)) + fadeIn(tween(300)),
+                exit    = shrinkVertically(tween(250)) + fadeOut(tween(250)),
+            ) {
+                Column(
+                    modifier = Modifier.padding(top = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
-                    Column(
-                        modifier = Modifier.padding(top = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        HorizontalDivider(color = rank.primaryColor.copy(alpha = 0.2f))
+                    HorizontalDivider(color = rank.primaryColor.copy(alpha = 0.18f))
 
-                        Text(
-                            rank.description,
-                            style      = MaterialTheme.typography.bodyMedium,
-                            color      = Color.White.copy(alpha = 0.7f),
-                            lineHeight = 22.sp,
-                        )
+                    Text(rank.description, style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.65f), lineHeight = 22.sp)
 
-                        Text(
-                            "Требуется 1RM:",
-                            style      = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color      = rank.primaryColor,
-                        )
+                    Text("Требуется 1RM:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = rank.primaryColor)
 
-                        Row(
-                            modifier              = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            listOf(
-                                "🏋️\nЖим"    to rank.bench1RmKg,
-                                "🦵\nПрисед" to rank.squat1RmKg,
-                                "⬆️\nТяга"   to rank.deadlift1RmKg,
-                            ).forEach { (label, weight) ->
-                                Column(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .clip(RoundedCornerShape(14.dp))
-                                        .background(rank.primaryColor.copy(alpha = 0.1f))
-                                        .border(1.dp, rank.primaryColor.copy(alpha = 0.25f), RoundedCornerShape(14.dp))
-                                        .padding(vertical = 12.dp, horizontal = 8.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(6.dp),
-                                ) {
-                                    Text(label, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.5f), textAlign = TextAlign.Center)
-                                    Text(
-                                        "${weight.toInt()} кг",
-                                        style      = MaterialTheme.typography.titleLarge,
-                                        fontWeight = FontWeight.Black,
-                                        color      = rank.primaryColor,
-                                    )
-                                }
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf(
+                            "🏋️\nЖим"    to rank.bench1RmKg,
+                            "🦵\nПрисед" to rank.squat1RmKg,
+                            "⬆️\nТяга"   to rank.deadlift1RmKg,
+                        ).forEach { (label, kg) ->
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(rank.primaryColor.copy(alpha = 0.09f))
+                                    .border(1.dp, rank.primaryColor.copy(alpha = 0.22f), RoundedCornerShape(14.dp))
+                                    .padding(vertical = 14.dp, horizontal = 8.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(6.dp),
+                            ) {
+                                Text(label, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.45f), textAlign = TextAlign.Center)
+                                Text("${kg.toInt()} кг", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = rank.primaryColor)
                             }
                         }
                     }

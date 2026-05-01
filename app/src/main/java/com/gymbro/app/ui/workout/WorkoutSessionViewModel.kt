@@ -10,7 +10,10 @@ import com.gymbro.app.data.local.entity.TrainingDayExerciseEntity
 import com.gymbro.app.data.local.entity.WorkoutPlanEntity
 import com.gymbro.app.data.repository.ExerciseRepository
 import com.gymbro.app.data.repository.ProgressRepository
+import com.gymbro.app.data.repository.RankRepository  // ← добавлено
 import com.gymbro.app.data.repository.WorkoutRepository
+import com.gymbro.app.domain.model.BigThreeLift
+import com.gymbro.app.domain.model.Rank               // предполагаемый класс
 import com.gymbro.app.domain.usecase.LogSetUseCase
 import com.gymbro.app.ui.navigation.Screen
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -51,6 +54,7 @@ class WorkoutSessionViewModel @Inject constructor(
     private val workoutRepo: WorkoutRepository,
     private val exerciseRepo: ExerciseRepository,
     private val progressRepo: ProgressRepository,
+    private val rankRepo: RankRepository,           // ← добавлено
     private val logSetUseCase: LogSetUseCase,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
@@ -61,6 +65,11 @@ class WorkoutSessionViewModel @Inject constructor(
     private val selectedDayIdFlow = MutableStateFlow<Long?>(null)
     private val restFlow = MutableStateFlow(0)
     private val messageFlow = MutableStateFlow<String?>(null)
+
+    // Новое: событие повышения ранга после сета
+    private val _rankUpForSession = MutableStateFlow<Rank?>(null)
+    val rankUpForSession: StateFlow<Rank?> = _rankUpForSession.asStateFlow()
+
     private var restJob: Job? = null
 
     private val _state = MutableStateFlow(WorkoutSessionUiState(sessionId = sessionId))
@@ -68,12 +77,10 @@ class WorkoutSessionViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            // Активный план + его дни (читаем один раз).
             val plan = workoutRepo.observeActivePlan().firstOrNull()
             val days = plan?.let { workoutRepo.observeDays(it.id).firstOrNull() } ?: emptyList()
             selectedDayIdFlow.value = days.firstOrNull()?.id
 
-            // Поток упражнений для выбранного дня — переподписываемся при смене дня.
             val exercisesForDayFlow = selectedDayIdFlow.flatMapLatest { dayId ->
                 if (dayId == null) flowOf(emptyList())
                 else workoutRepo.observeDayExercises(dayId)
@@ -121,9 +128,11 @@ class WorkoutSessionViewModel @Inject constructor(
 
     fun logSet(exerciseId: Long, weightKg: Double, reps: Int, restSeconds: Int) {
         if (weightKg <= 0.0 || reps <= 0) return
+
         viewModelScope.launch {
             val existing = progressRepo.observeSession(sessionId).firstOrNull() ?: emptyList()
             val setNumber = existing.count { it.exerciseId == exerciseId } + 1
+
             val res = logSetUseCase(
                 LogSetUseCase.Params(
                     sessionId = sessionId,
@@ -133,6 +142,29 @@ class WorkoutSessionViewModel @Inject constructor(
                     reps = reps,
                 )
             )
+
+            // === Автообновление 1RM для Big Three ===
+            if (reps == 1) {
+                val lift = BigThreeLift.fromSeedId(exerciseId)
+                if (lift != null) {
+                    val newRank = rankRepo.updateIfBetter(
+                        bench = if (lift == BigThreeLift.BENCH_PRESS) weightKg else null,
+                        squat = if (lift == BigThreeLift.BACK_SQUAT) weightKg else null,
+                        deadlift = if (lift == BigThreeLift.DEADLIFT) weightKg else null,
+                    )
+
+                    if (newRank != null) {
+                        _rankUpForSession.value = newRank
+                        // Автосброс через 4 секунды (можно изменить)
+                        launch {
+                            delay(4000)
+                            _rankUpForSession.value = null
+                        }
+                    }
+                }
+            }
+            // =====================================
+
             if (res.newPrTypes.isNotEmpty()) {
                 messageFlow.value = "🎉 Новый рекорд!"
                 launch {
@@ -140,6 +172,7 @@ class WorkoutSessionViewModel @Inject constructor(
                     messageFlow.value = null
                 }
             }
+
             startRest(restSeconds)
         }
     }
@@ -161,4 +194,5 @@ class WorkoutSessionViewModel @Inject constructor(
         restJob?.cancel()
         restFlow.value = 0
     }
+    
 }

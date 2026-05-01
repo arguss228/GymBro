@@ -1,14 +1,33 @@
 package com.gymbro.app.ui.rank
 
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -30,19 +49,22 @@ fun Enter1RmScreen(
     var squat    by remember { mutableStateOf("") }
     var deadlift by remember { mutableStateOf("") }
 
-    // Entrance animation
-    val alpha by produceState(0f) {
-        animate(0f, 1f, animationSpec = tween(800)) { v, _ -> value = v }
-    }
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { visible = true }
+    val alpha by animateFloatAsState(
+        targetValue   = if (visible) 1f else 0f,
+        animationSpec = tween(700),
+        label         = "enter1rm_alpha",
+    )
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    listOf(Color(0xFF0A0E1A), Color(0xFF1A1F35), Color(0xFF0D1B2A))
+                    listOf(Color(0xFF0A0E1A), Color(0xFF0D1B2A), Color(0xFF070B14))
                 )
-            )
+            ),
     ) {
         Column(
             modifier = Modifier
@@ -53,67 +75,62 @@ fun Enter1RmScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            Spacer(Modifier.height(60.dp))
+            Spacer(Modifier.height(80.dp))
 
             Text("💪", fontSize = 72.sp, textAlign = TextAlign.Center)
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(20.dp))
 
             Text(
-                "Введи свои максимумы",
+                "Твои максимумы на 1 повторение",
                 style      = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Black,
                 color      = Color.White,
                 textAlign  = TextAlign.Center,
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(10.dp))
             Text(
-                "Укажи максимальный вес на 1 повторение в каждом упражнении. Мы определим твой начальный ранг.",
+                "Введи максимальный вес, который ты поднимал на 1 раз. Мы определим твой ранг и будем отслеживать прогресс.",
                 style     = MaterialTheme.typography.bodyMedium,
-                color     = Color.White.copy(alpha = 0.6f),
+                color     = Color.White.copy(alpha = 0.55f),
                 textAlign = TextAlign.Center,
             )
 
-            Spacer(Modifier.height(40.dp))
+            Spacer(Modifier.height(44.dp))
 
-            OneRmField(
-                label     = "🏋️  Жим лёжа",
-                hint      = "кг × 1",
-                value     = bench,
-                onChange  = { bench = it },
-                color     = Color(0xFFFF6B35),
+            OneRmInputField(
+                label    = "🏋️  Жим лёжа",
+                value    = bench,
+                onChange = { bench = it },
+                color    = Color(0xFFFF6B35),
             )
             Spacer(Modifier.height(16.dp))
-            OneRmField(
-                label     = "🦵  Присед со штангой",
-                hint      = "кг × 1",
-                value     = squat,
-                onChange  = { squat = it },
-                color     = Color(0xFF4CAF50),
+            OneRmInputField(
+                label    = "🦵  Присед со штангой",
+                value    = squat,
+                onChange = { squat = it },
+                color    = Color(0xFF4CAF50),
             )
             Spacer(Modifier.height(16.dp))
-            OneRmField(
-                label     = "⬆️  Становая тяга",
-                hint      = "кг × 1",
-                value     = deadlift,
-                onChange  = { deadlift = it },
-                color     = Color(0xFF2979FF),
+            OneRmInputField(
+                label    = "⬆️  Становая тяга",
+                value    = deadlift,
+                onChange = { deadlift = it },
+                color    = Color(0xFF2979FF),
             )
 
-            Spacer(Modifier.height(40.dp))
+            Spacer(Modifier.height(44.dp))
 
             Button(
                 onClick = {
-                    val b = bench.toDoubleOrNull() ?: 0.0
-                    val s = squat.toDoubleOrNull() ?: 0.0
+                    val b = bench.toDoubleOrNull()    ?: 0.0
+                    val s = squat.toDoubleOrNull()    ?: 0.0
                     val d = deadlift.toDoubleOrNull() ?: 0.0
                     viewModel.save1Rm(b, s, d)
                     onDone()
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp),
-                shape  = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(
+                modifier = Modifier.fillMaxWidth().height(60.dp),
+                shape    = RoundedCornerShape(18.dp),
+                colors   = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFF2979FF),
                     contentColor   = Color.White,
                 ),
@@ -124,50 +141,57 @@ fun Enter1RmScreen(
                     fontWeight = FontWeight.Bold,
                 )
             }
-
+            Spacer(Modifier.height(8.dp))
             TextButton(
                 onClick = { viewModel.save1Rm(0.0, 0.0, 0.0); onDone() },
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(
                     "Пропустить — начать с Дерева",
-                    color = Color.White.copy(alpha = 0.4f),
+                    color = Color.White.copy(alpha = 0.35f),
+                    style = MaterialTheme.typography.bodyMedium,
                 )
             }
-
-            Spacer(Modifier.height(40.dp))
+            Spacer(Modifier.height(60.dp))
         }
     }
 }
 
 @Composable
-private fun OneRmField(
+private fun OneRmInputField(
     label: String,
-    hint: String,
     value: String,
     onChange: (String) -> Unit,
     color: Color,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(label, style = MaterialTheme.typography.labelLarge, color = color, fontWeight = FontWeight.Bold)
+        Text(
+            label,
+            style      = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold,
+            color      = color,
+        )
         OutlinedTextField(
             value         = value,
             onValueChange = { new ->
                 if (new.all { it.isDigit() || it == '.' || it == ',' })
                     onChange(new.replace(',', '.'))
             },
-            placeholder   = { Text(hint, color = Color.White.copy(alpha = 0.3f)) },
-            modifier      = Modifier.fillMaxWidth(),
-            singleLine    = true,
+            placeholder     = { Text("кг × 1", color = Color.White.copy(alpha = 0.25f)) },
+            suffix          = { Text("кг", color = color.copy(alpha = 0.7f)) },
+            modifier        = Modifier.fillMaxWidth(),
+            singleLine      = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            colors        = OutlinedTextFieldDefaults.colors(
+            shape           = RoundedCornerShape(14.dp),
+            colors          = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor   = color,
-                unfocusedBorderColor = color.copy(alpha = 0.4f),
+                unfocusedBorderColor = color.copy(alpha = 0.35f),
                 focusedTextColor     = Color.White,
                 unfocusedTextColor   = Color.White,
                 cursorColor          = color,
+                focusedContainerColor   = Color.White.copy(alpha = 0.04f),
+                unfocusedContainerColor = Color.White.copy(alpha = 0.03f),
             ),
-            shape = RoundedCornerShape(14.dp),
         )
     }
 }

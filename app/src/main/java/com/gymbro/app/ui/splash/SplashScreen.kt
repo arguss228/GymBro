@@ -22,52 +22,25 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun SplashScreen(
-    onOnboardingNeeded: () -> Unit,
-    onEnter1Rm: () -> Unit,
+    onNeedsOnboarding: () -> Unit,  // старый onboarding (имя и т.д.) — оставляем для совместимости
+    onNeeds1Rm: () -> Unit,         // новый: ввод 1RM
     onReady: () -> Unit,
     viewModel: SplashViewModel = hiltViewModel(),
 ) {
     LaunchedEffect(Unit) {
-        delay(600)
-
-        val onboardingDone = viewModel.isOnboardingCompleted()
-
-        if (!onboardingDone) {
-            onOnboardingNeeded()
-            return@LaunchedEffect
+        delay(500)
+        when {
+            !viewModel.isOnboardingCompleted() -> onNeedsOnboarding()
+            viewModel.needs1RmEntry()          -> onNeeds1Rm()
+            else                               -> onReady()
         }
-
-        if (viewModel.needsOneRmEntry()) {
-            onEnter1Rm()
-            return@LaunchedEffect
-        }
-
-        onReady()
     }
 
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Icon(
-                imageVector = Icons.Default.FitnessCenter,
-                contentDescription = null,
-                modifier = Modifier.size(96.dp),
-                tint = MaterialTheme.colorScheme.primary,
-            )
-            Text(
-                text = "GymBro",
-                style = MaterialTheme.typography.displayMedium,
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-            CircularProgressIndicator(
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(top = 24.dp),
-            )
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Icon(Icons.Default.FitnessCenter, null, Modifier.size(96.dp), tint = MaterialTheme.colorScheme.primary)
+            Text("GymBro", style = MaterialTheme.typography.displayMedium, color = MaterialTheme.colorScheme.onBackground)
+            CircularProgressIndicator(Modifier.padding(top = 24.dp), color = MaterialTheme.colorScheme.primary)
         }
     }
 }

@@ -27,43 +27,42 @@ import com.gymbro.app.ui.settings.SettingsScreen
 import com.gymbro.app.ui.splash.SplashScreen
 import com.gymbro.app.ui.workout.WorkoutSessionScreen
 
-private const val NAV_ANIM_MS = 350
+private const val NAV_MS = 350
 
 @Composable
 fun GymBroNavHost() {
     val nav = rememberNavController()
 
-    val slideIn: AnimatedContentTransitionScope<*>.() -> EnterTransition = {
-        slideInHorizontally(tween(NAV_ANIM_MS)) { it / 3 } + fadeIn(tween(NAV_ANIM_MS))
+    val slideIn:  AnimatedContentTransitionScope<*>.() -> EnterTransition = {
+        slideInHorizontally(tween(NAV_MS)) { it / 3 } + fadeIn(tween(NAV_MS))
     }
     val slideOut: AnimatedContentTransitionScope<*>.() -> ExitTransition = {
-        slideOutHorizontally(tween(NAV_ANIM_MS)) { -it / 3 } + fadeOut(tween(NAV_ANIM_MS))
+        slideOutHorizontally(tween(NAV_MS)) { -it / 3 } + fadeOut(tween(NAV_MS))
     }
     val popEnter: AnimatedContentTransitionScope<*>.() -> EnterTransition = {
-        slideInHorizontally(tween(NAV_ANIM_MS)) { -it / 3 } + fadeIn(tween(NAV_ANIM_MS))
+        slideInHorizontally(tween(NAV_MS)) { -it / 3 } + fadeIn(tween(NAV_MS))
     }
-    val popExit: AnimatedContentTransitionScope<*>.() -> ExitTransition = {
-        slideOutHorizontally(tween(NAV_ANIM_MS)) { it / 3 } + fadeOut(tween(NAV_ANIM_MS))
+    val popExit:  AnimatedContentTransitionScope<*>.() -> ExitTransition = {
+        slideOutHorizontally(tween(NAV_MS)) { it / 3 } + fadeOut(tween(NAV_MS))
     }
 
     NavHost(
-        navController = nav,
-        startDestination = Screen.Splash.route,
-        enterTransition = slideIn,
-        exitTransition = slideOut,
+        navController      = nav,
+        startDestination   = Screen.Splash.route,
+        enterTransition    = slideIn,
+        exitTransition     = slideOut,
         popEnterTransition = popEnter,
-        popExitTransition = popExit,
+        popExitTransition  = popExit,
     ) {
 
-        // ── Splash ────────────────────────────────────────────────
         composable(Screen.Splash.route) {
             SplashScreen(
-                onOnboardingNeeded = {
+                onNeedsOnboarding = {
                     nav.navigate(Screen.Onboarding.route) {
                         popUpTo(Screen.Splash.route) { inclusive = true }
                     }
                 },
-                onEnter1Rm = {
+                onNeeds1Rm = {
                     nav.navigate(Screen.Enter1Rm.route) {
                         popUpTo(Screen.Splash.route) { inclusive = true }
                     }
@@ -76,7 +75,6 @@ fun GymBroNavHost() {
             )
         }
 
-        // ── Onboarding ────────────────────────────────────────────
         composable(Screen.Onboarding.route) {
             OnboardingScreen(
                 onFinished = {
@@ -87,7 +85,7 @@ fun GymBroNavHost() {
             )
         }
 
-        // ── Enter 1RM ─────────────────────────────────────────────
+        // ── Ввод 1RM (первый запуск) ──────────────────────────────
         composable(Screen.Enter1Rm.route) {
             Enter1RmScreen(
                 onDone = {
@@ -98,79 +96,64 @@ fun GymBroNavHost() {
             )
         }
 
-        // ── Dashboard ─────────────────────────────────────────────
         composable(Screen.Dashboard.route) {
             DashboardScreen(
-                onStartWorkout = { sessionId -> nav.navigate(Screen.WorkoutSession.build(sessionId)) },
-                onOpenPlans = { nav.navigate(Screen.Plans.route) },
-                onOpenProgress = { nav.navigate(Screen.Progress.route) },
+                onStartWorkout  = { sessionId -> nav.navigate(Screen.WorkoutSession.build(sessionId)) },
+                onOpenPlans     = { nav.navigate(Screen.Plans.route) },
+                onOpenProgress  = { nav.navigate(Screen.Progress.route) },
                 onOpenExercises = { nav.navigate(Screen.Exercises.route) },
-                onOpenSettings = { nav.navigate(Screen.Settings.route) },
-                onOpenRanks = { nav.navigate(Screen.StrengthRanks.route) },
+                onOpenSettings  = { nav.navigate(Screen.Settings.route) },
+                onOpenRanks     = { nav.navigate(Screen.StrengthRanks.route) },
             )
         }
 
-        // ── Plans ─────────────────────────────────────────────────
+        // ── Экран рангов ──────────────────────────────────────────
+        composable(Screen.StrengthRanks.route) {
+            StrengthRanksScreen(onBack = { nav.popBackStack() })
+        }
+
         composable(Screen.Plans.route) {
             PlansScreen(
-                onBack = { nav.popBackStack() },
+                onBack       = { nav.popBackStack() },
                 onCreatePlan = { nav.navigate(Screen.PlanEditor.build(null)) },
-                onEditPlan = { id -> nav.navigate(Screen.PlanEditor.build(id)) },
+                onEditPlan   = { id -> nav.navigate(Screen.PlanEditor.build(id)) },
             )
         }
 
-        // ── Plan Editor ───────────────────────────────────────────
         composable(
-            route = Screen.PlanEditor.route,
-            arguments = listOf(navArgument("planId") {
-                type = NavType.LongType
-                defaultValue = -1L
-            }),
+            Screen.PlanEditor.route,
+            arguments = listOf(navArgument("planId") { type = NavType.LongType; defaultValue = -1L }),
         ) {
             PlanEditorScreen(onBack = { nav.popBackStack() })
         }
 
-        // ── Exercises list ────────────────────────────────────────
         composable(Screen.Exercises.route) {
             ExercisesScreen(
-                onBack = { nav.popBackStack() },
+                onBack          = { nav.popBackStack() },
                 onExerciseClick = { id -> nav.navigate(Screen.ExerciseDetail.build(id)) },
             )
         }
 
-        // ── Exercise detail ───────────────────────────────────────
         composable(
-            route = Screen.ExerciseDetail.route,
-            arguments = listOf(navArgument(Screen.ExerciseDetail.ARG_EXERCISE_ID) {
-                type = NavType.LongType
-            }),
+            Screen.ExerciseDetail.route,
+            arguments = listOf(navArgument(Screen.ExerciseDetail.ARG_EXERCISE_ID) { type = NavType.LongType }),
         ) {
             ExerciseDetailScreen(onBack = { nav.popBackStack() })
         }
 
-        // ── Workout session ───────────────────────────────────────
         composable(
-            route = Screen.WorkoutSession.route,
-            arguments = listOf(navArgument(Screen.WorkoutSession.ARG_SESSION_ID) {
-                type = NavType.LongType
-            }),
+            Screen.WorkoutSession.route,
+            arguments = listOf(navArgument(Screen.WorkoutSession.ARG_SESSION_ID) { type = NavType.LongType }),
         ) {
             WorkoutSessionScreen(onBack = { nav.popBackStack() })
         }
 
-        // ── Progress ──────────────────────────────────────────────
         composable(Screen.Progress.route) {
             ProgressScreen(onBack = { nav.popBackStack() })
         }
 
-        // ── Settings ──────────────────────────────────────────────
         composable(Screen.Settings.route) {
             SettingsScreen(onBack = { nav.popBackStack() })
-        }
-
-        // ── Strength Ranks ────────────────────────────────────────
-        composable(Screen.StrengthRanks.route) {
-            StrengthRanksScreen(onBack = { nav.popBackStack() })
         }
     }
 }

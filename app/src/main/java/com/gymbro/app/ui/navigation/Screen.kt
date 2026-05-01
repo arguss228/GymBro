@@ -3,13 +3,12 @@ package com.gymbro.app.ui.navigation
 sealed class Screen(val route: String) {
     data object Splash         : Screen("splash")
     data object Onboarding     : Screen("onboarding")
-    data object Enter1Rm       : Screen("enter_1rm")
+    data object Enter1Rm       : Screen("enter_1rm")          // ← НОВЫЙ
     data object Dashboard      : Screen("dashboard")
+    data object StrengthRanks  : Screen("strength_ranks")     // ← НОВЫЙ
     data object Plans          : Screen("plans")
-    data object StrengthRanks  : Screen("strength_ranks")
     data object PlanEditor     : Screen("plan_editor?planId={planId}") {
-        fun build(planId: Long? = null) =
-            "plan_editor" + (planId?.let { "?planId=$it" } ?: "")
+        fun build(planId: Long? = null) = "plan_editor" + (planId?.let { "?planId=$it" } ?: "")
     }
     data object Exercises      : Screen("exercises")
     data object ExerciseDetail : Screen("exercise_detail/{exerciseId}") {
