@@ -23,6 +23,8 @@ data class DashboardUiState(
     val totalSessions: Int = 0,
     val profile: UserProfileEntity? = null,
     val pendingCelebration: LevelProgressEntity? = null,
+    val rankState: RankState = RankState(),
+    val showRankUp: StrengthRank? = null,
 )
 
 @HiltViewModel
@@ -31,6 +33,8 @@ class DashboardViewModel @Inject constructor(
     progressRepo: ProgressRepository,
     private val levelRepo: LevelRepository,
     private val startWorkout: StartWorkoutUseCase,
+    val rankState: StateFlow<RankState> = rankRepo.observeRankState()
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), RankState())
 ) : ViewModel() {
 
     val state: StateFlow<DashboardUiState> = combine(

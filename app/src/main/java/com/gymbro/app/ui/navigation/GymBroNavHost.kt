@@ -90,6 +90,7 @@ fun GymBroNavHost() {
                 onOpenProgress  = { nav.navigate(Screen.Progress.route) },
                 onOpenExercises = { nav.navigate(Screen.Exercises.route) },
                 onOpenSettings  = { nav.navigate(Screen.Settings.route) },
+                onOpenRanks = { nav.navigate(Screen.StrengthRanks.route) },
             )
         }
 
@@ -150,5 +151,8 @@ fun GymBroNavHost() {
         composable(Screen.Settings.route) {
             SettingsScreen(onBack = { nav.popBackStack() })
         }
+        composable(Screen.StrengthRanks.route) {
+            StrengthRanksScreen(onBack = { nav.popBackStack() })
+}
     }
 }

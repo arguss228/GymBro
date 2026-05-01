@@ -49,9 +49,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+
 import com.gymbro.app.domain.model.LevelTier
+import com.gymbro.app.domain.model.StrengthRank          // ← новый импорт
 import com.gymbro.app.ui.components.ActionCard
 import com.gymbro.app.ui.components.LevelCard
+import com.gymbro.app.ui.components.RankDashboardCard     // ← новый импорт (если лежит в components)
+
+// Если RankUpDialog лежит в другом месте, добавь его импорт тоже
+// import com.gymbro.app.ui.components.RankUpDialog
 
 @Composable
 fun DashboardScreen(
@@ -60,6 +66,7 @@ fun DashboardScreen(
     onOpenProgress: () -> Unit,
     onOpenExercises: () -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenRanks: () -> Unit,                    // ← добавь этот параметр
     viewModel: DashboardViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -85,12 +92,22 @@ fun DashboardScreen(
             onOpenProgress = onOpenProgress,
             onOpenExercises = onOpenExercises,
             onOpenSettings = onOpenSettings,
+            onOpenRanks = onOpenRanks,               // ← передаём дальше
         )
 
+        // Level up диалог (старый)
         state.pendingCelebration?.let { pending ->
             LevelUpDialog(
                 newLevel = pending.level,
                 onDismiss = { viewModel.onCelebrationDismissed(pending.id) },
+            )
+        }
+
+        // Новый Rank Up диалог
+        state.showRankUp?.let { newRank ->
+            RankUpDialog(
+                newRank = newRank,
+                onDismiss = { viewModel.dismissRankUp() },
             )
         }
     }
@@ -105,6 +122,7 @@ private fun DashboardContent(
     onOpenProgress: () -> Unit,
     onOpenExercises: () -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenRanks: () -> Unit,                     // ← новый параметр
 ) {
     Column(
         modifier = Modifier
@@ -133,7 +151,6 @@ private fun DashboardContent(
                     fontWeight = FontWeight.ExtraBold,
                 )
             }
-            // Settings button
             IconButton(
                 onClick = onOpenSettings,
                 modifier = Modifier
@@ -149,8 +166,11 @@ private fun DashboardContent(
             }
         }
 
-        // ── Level card ────────────────────────────────────────────
-        LevelCard(level = state.level)
+        // ← Здесь была LevelCard, теперь заменяем на RankDashboardCard
+        RankDashboardCard(
+            state = state.rankState,
+            onOpenRanks = onOpenRanks,
+        )
 
         // ── Stats strip ───────────────────────────────────────────
         StatsStrip(totalSessions = state.totalSessions)
@@ -164,7 +184,7 @@ private fun DashboardContent(
             shape = RoundedCornerShape(18.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary,
-                contentColor   = MaterialTheme.colorScheme.onPrimary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
             ),
             elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp),
         ) {
@@ -181,7 +201,7 @@ private fun DashboardContent(
             )
         }
 
-        // ── Navigation cards ──────────────────────────────────────
+        // Остальные карточки без изменений...
         ActionCard(
             title = "Мои планы",
             subtitle = "Выбрать готовый или создать свой",
@@ -189,6 +209,7 @@ private fun DashboardContent(
             accentColor = MaterialTheme.colorScheme.secondary,
             onClick = onOpenPlans,
         )
+
         ActionCard(
             title = "Прогресс",
             subtitle = "Графики, PR и история тренировок",
@@ -196,6 +217,7 @@ private fun DashboardContent(
             accentColor = MaterialTheme.colorScheme.tertiary,
             onClick = onOpenProgress,
         )
+
         ActionCard(
             title = "Упражнения",
             subtitle = "База с техникой и рекомендациями",

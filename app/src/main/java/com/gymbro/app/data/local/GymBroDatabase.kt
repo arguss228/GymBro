@@ -30,6 +30,7 @@ import com.gymbro.app.data.local.entity.WorkoutPlanEntity
         PersonalRecordEntity::class,
         LevelProgressEntity::class,
         UserProfileEntity::class,
+        OneRmEntity::class,
     ],
     version = 1,
     exportSchema = true
@@ -44,6 +45,7 @@ abstract class GymBroDatabase : RoomDatabase() {
     abstract fun personalRecordDao(): PersonalRecordDao
     abstract fun levelProgressDao(): LevelProgressDao
     abstract fun userProfileDao(): UserProfileDao
+    abstract fun oneRmDao(): OneRmDao
 
     companion object {
         const val DATABASE_NAME = "gymbro.db"
