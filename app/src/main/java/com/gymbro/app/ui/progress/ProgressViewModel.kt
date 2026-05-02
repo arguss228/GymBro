@@ -10,6 +10,8 @@ import com.gymbro.app.data.repository.ProgressRepository
 import com.gymbro.app.domain.model.BigThreeLift
 import com.gymbro.app.domain.model.StrengthLevel
 import com.gymbro.app.domain.usecase.ObserveCurrentLevelUseCase
+import com.gymbro.app.data.repository.RankRepository
+import com.gymbro.app.data.repository.RankState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -23,6 +25,7 @@ import kotlinx.coroutines.flow.stateIn
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
+
 enum class ProgressPeriod(val label: String, val months: Int?) {
     ONE_MONTH("1 мес", 1),
     THREE_MONTHS("3 мес", 3),
@@ -32,6 +35,7 @@ enum class ProgressPeriod(val label: String, val months: Int?) {
 }
 
 data class ProgressUiState(
+    val rankState: RankState = RankState(), 
     val level: StrengthLevel = StrengthLevel.PLACEHOLDER,
     val totalSessions: Int = 0,
     val personalRecords: List<PrWithExercise> = emptyList(),
@@ -54,6 +58,7 @@ data class PrWithExercise(
 class ProgressViewModel @Inject constructor(
     private val progressRepo: ProgressRepository,
     private val exerciseRepo: ExerciseRepository,
+    private val rankRepo: RankRepository, 
     observeLevel: ObserveCurrentLevelUseCase,
 ) : ViewModel() {
 
@@ -77,40 +82,52 @@ class ProgressViewModel @Inject constructor(
         .debounce(150)
         .flatMapLatest { q -> exerciseRepo.search(q) }
 
-    val state: StateFlow<ProgressUiState> = combine(
+val state: StateFlow<ProgressUiState> = combine(
+    combine(
+        rankRepo.observeRankState(),
         observeLevel(),
         progressRepo.observeTotalSessions(),
         progressRepo.observeAllPersonalRecords(),
-        exerciseRepo.observeAll(),
-        combine(
-            selectedExerciseIdFlow,
-            selectedPeriodFlow,
-            searchQueryFlow,
-            searchResultsFlow,
-            historyFlow,
-        ) { exId, period, query, searchResults, history ->
-            PartialState(exId, period, query, searchResults, history)
-        },
-    ) { level, sessions, prs, allExercises, partial ->
-        val byId = allExercises.associateBy { it.id }
-        val prItems = prs.mapNotNull { pr ->
-            byId[pr.exerciseId]?.let { ex -> PrWithExercise(pr, ex.name) }
-        }
-        val chartPoints = buildRunningMaxChart(partial.history)
+    ) { rankState, level, sessions, prs -> 
+        listOf(rankState, level, sessions, prs) // промежуточный объект
+    },
+    exerciseRepo.observeAll(),
+    combine(
+        selectedExerciseIdFlow,
+        selectedPeriodFlow,
+        searchQueryFlow,
+        searchResultsFlow,
+        historyFlow,
+    ) { exId, period, query, searchResults, history ->
+        PartialState(exId, period, query, searchResults, history)
+    },
+) { meta, allExercises, partial ->
+    @Suppress("UNCHECKED_CAST")
+    val rankState = meta[0] as RankState
+    val level = meta[1] as StrengthLevel
+    val sessions = meta[2] as Int
+    val prs = meta[3] as List<PersonalRecordEntity>
+    
+    val byId = allExercises.associateBy { it.id }
+    val prItems = prs.mapNotNull { pr ->
+        byId[pr.exerciseId]?.let { ex -> PrWithExercise(pr, ex.name) }
+    }
+    val chartPoints = buildRunningMaxChart(partial.history)
 
-        ProgressUiState(
-            level                = level,
-            totalSessions        = sessions,
-            personalRecords      = prItems,
-            allExercises         = allExercises,
-            filteredExercises    = if (partial.searchQuery.isBlank()) allExercises else partial.searchResults,
-            searchQuery          = partial.searchQuery,
-            selectedExerciseId   = partial.selectedExerciseId,
-            selectedExerciseName = byId[partial.selectedExerciseId]?.name ?: "",
-            selectedPeriod       = partial.selectedPeriod,
-            chartPoints          = chartPoints,
-        )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ProgressUiState())
+    ProgressUiState(
+        rankState            = rankState,
+        level                = level,
+        totalSessions        = sessions,
+        personalRecords      = prItems,
+        allExercises         = allExercises,
+        filteredExercises    = if (partial.searchQuery.isBlank()) allExercises else partial.searchResults,
+        searchQuery          = partial.searchQuery,
+        selectedExerciseId   = partial.selectedExerciseId,
+        selectedExerciseName = byId[partial.selectedExerciseId]?.name ?: "",
+        selectedPeriod       = partial.selectedPeriod,
+        chartPoints          = chartPoints,
+    )
+}.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ProgressUiState())
 
     fun selectExercise(id: Long) {
         selectedExerciseIdFlow.value = id

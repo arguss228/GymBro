@@ -53,6 +53,7 @@ import com.gymbro.app.data.local.entity.ExerciseEntity
 import com.gymbro.app.data.local.entity.PrType
 import com.gymbro.app.ui.components.LevelCard
 import com.gymbro.app.ui.components.ProgressChart
+import com.gymbro.app.ui.rank.RankDashboardCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -88,10 +89,12 @@ fun ProgressScreen(
                 start = 16.dp, end = 16.dp, top = 8.dp, bottom = 32.dp
             ),
         ) {
-            // Карточка уровня
-            item {
-                LevelCard(level = state.level)
-            }
+           item {
+        RankDashboardCard(
+        state       = state.rankState,
+        onOpenRanks = {},
+    )
+}
 
             // Статистика
             item {
