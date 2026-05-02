@@ -71,11 +71,10 @@ class ProgressRepository @Inject constructor(
             )
         )
 
-        if (isWarmup) {
-         return LogSetResult(logId, emptyList())
-         bodyRankRepo.updateIfBetter(exerciseId, estimated1Rm)
-        }
-        val newPrs = mutableListOf<PrType>()
+       if (isWarmup) return LogSetResult(logId, emptyList())
+       bodyRankRepo.updateIfBetter(exerciseId, estimated1Rm)
+
+       val newPrs = mutableListOf<PrType>()
 
         // 1RM PR
         val current1Rm = prDao.getPr(exerciseId, PrType.ONE_RM)
