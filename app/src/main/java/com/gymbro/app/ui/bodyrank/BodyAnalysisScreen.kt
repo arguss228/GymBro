@@ -30,6 +30,13 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gymbro.app.data.local.entity.ExerciseEntity
 import com.gymbro.app.domain.model.*
+import androidx.compose.animation.core.EaseInOutSine
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -114,13 +121,14 @@ fun BodyAnalysisScreen(
 @Composable
 private fun OverallRankCard(bodyRank: UserBodyRank, onAddData: () -> Unit) {
     val rank = bodyRank.overallRank
-    val infiniteTransition = androidx.compose.animation.core.rememberInfiniteTransition(label = "body_glow")
+
+    val infiniteTransition = rememberInfiniteTransition(label = "body_glow")
     val glowAlpha by infiniteTransition.animateFloat(
         initialValue  = 0.3f,
         targetValue   = 0.7f,
-        animationSpec = androidx.compose.animation.core.infiniteRepeatable(
-            androidx.compose.animation.core.tween(2000, easing = androidx.compose.animation.core.EaseInOutSine),
-            androidx.compose.animation.core.RepeatMode.Reverse,
+        animationSpec = infiniteRepeatable(
+            animation  = tween(2000, easing = EaseInOutSine),
+            repeatMode = RepeatMode.Reverse,
         ),
         label = "body_glow_alpha",
     )
@@ -130,18 +138,24 @@ private fun OverallRankCard(bodyRank: UserBodyRank, onAddData: () -> Unit) {
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
             .background(
-                Brush.linearGradient(listOf(Color(0xFF0D1B2A), rank.primaryColor.copy(alpha = 0.15f), Color(0xFF070B14)))
+                Brush.linearGradient(
+                    listOf(Color(0xFF0D1B2A), rank.primaryColor.copy(alpha = 0.15f), Color(0xFF070B14))
+                )
             )
             .border(
                 1.5.dp,
-                Brush.linearGradient(listOf(rank.primaryColor.copy(alpha = 0.6f), rank.secondaryColor.copy(alpha = 0.3f))),
+                Brush.linearGradient(
+                    listOf(rank.primaryColor.copy(alpha = 0.6f), rank.secondaryColor.copy(alpha = 0.3f))
+                ),
                 RoundedCornerShape(24.dp),
             )
             .padding(24.dp),
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            // Заголовок
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
                 Text(rank.symbol, fontSize = 56.sp)
                 Column(Modifier.weight(1f)) {
                     Text(
@@ -166,36 +180,54 @@ private fun OverallRankCard(bodyRank: UserBodyRank, onAddData: () -> Unit) {
                 )
             }
 
-            // Прогресс
             bodyRank.nextRank?.let { next ->
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("До ${next.symbol} ${next.name}", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(0.5f))
-                        Text("${(bodyRank.progressToNext * 100).toInt()}%", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = rank.primaryColor)
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(
+                            "До ${next.symbol} ${next.name}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White.copy(alpha = 0.5f),
+                        )
+                        Text(
+                            "${(bodyRank.progressToNext * 100).toInt()}%",
+                            style      = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color      = rank.primaryColor,
+                        )
                     }
                     Box(
-                        Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)).background(Color.White.copy(0.08f))
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(8.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(Color.White.copy(alpha = 0.08f)),
                     ) {
                         Box(
-                            Modifier
+                            modifier = Modifier
                                 .fillMaxWidth(bodyRank.progressToNext.coerceIn(0f, 1f))
                                 .fillMaxHeight()
                                 .clip(RoundedCornerShape(4.dp))
-                                .background(Brush.horizontalGradient(listOf(rank.primaryColor, rank.secondaryColor)))
+                                .background(
+                                    Brush.horizontalGradient(
+                                        listOf(rank.primaryColor, rank.secondaryColor)
+                                    )
+                                ),
                         )
                     }
                 }
             }
 
-            // Кнопка добавить данные
             OutlinedButton(
                 onClick = onAddData,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape  = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = rank.primaryColor),
-                border = androidx.compose.foundation.BorderStroke(1.dp, rank.primaryColor.copy(0.5f)),
+                border = BorderStroke(1.dp, rank.primaryColor.copy(alpha = 0.5f)),
             ) {
-                Icon(Icons.Default.Add, null, Modifier.size(16.dp))
+                Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(6.dp))
                 Text("Добавить / обновить данные", fontWeight = FontWeight.SemiBold)
             }

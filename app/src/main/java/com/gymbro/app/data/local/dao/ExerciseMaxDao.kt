@@ -1,6 +1,9 @@
 package com.gymbro.app.data.local.dao
 
-import androidx.room.*
+import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
 import com.gymbro.app.data.local.entity.ExerciseMaxEntity
 import kotlinx.coroutines.flow.Flow
 

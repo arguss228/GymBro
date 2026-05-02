@@ -6,18 +6,16 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
-/**
- * Хранит лучший 1RM пользователя по каждому упражнению.
- * Обновляется автоматически при каждом новом PR.
- */
 @Entity(
     tableName = "exercise_max",
-    foreignKeys = [ForeignKey(
-        entity = ExerciseEntity::class,
-        parentColumns = ["id"],
-        childColumns = ["exercise_id"],
-        onDelete = ForeignKey.CASCADE,
-    )],
+    foreignKeys = [
+        ForeignKey(
+            entity = ExerciseEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["exercise_id"],
+            onDelete = ForeignKey.CASCADE,
+        )
+    ],
     indices = [Index("exercise_id", unique = true)],
 )
 data class ExerciseMaxEntity(

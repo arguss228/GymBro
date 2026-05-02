@@ -22,6 +22,8 @@ import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -60,7 +62,6 @@ fun DashboardScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    // Анимация повышения ранга
     state.rankUpEvent?.let { newRank ->
         RankUpDialog(
             newRank   = newRank,
@@ -105,10 +106,16 @@ fun DashboardScreen(
                 }
                 IconButton(
                     onClick  = onOpenSettings,
-                    modifier = Modifier.size(44.dp).clip(CircleShape)
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.surfaceVariant),
                 ) {
-                    Icon(Icons.Default.Settings, "Настройки", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Icon(
+                        Icons.Default.Settings,
+                        "Настройки",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
 
@@ -120,8 +127,8 @@ fun DashboardScreen(
 
             // ── Статистика ────────────────────────────────────────
             Surface(
-                shape  = RoundedCornerShape(16.dp),
-                color  = MaterialTheme.colorScheme.surfaceVariant,
+                shape    = RoundedCornerShape(16.dp),
+                color    = MaterialTheme.colorScheme.surfaceVariant,
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Row(
@@ -130,38 +137,88 @@ fun DashboardScreen(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     Box(
-                        modifier = Modifier.size(36.dp).clip(CircleShape)
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Icon(Icons.Default.FitnessCenter, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                        Icon(
+                            Icons.Default.FitnessCenter,
+                            null,
+                            tint     = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp),
+                        )
                     }
                     Column {
-                        Text("${state.totalSessions}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, fontSize = 20.sp)
-                        Text("тренировок всего", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            "${state.totalSessions}",
+                            style      = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Black,
+                            fontSize   = 20.sp,
+                        )
+                        Text(
+                            "тренировок всего",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                 }
             }
 
             // ── CTA ───────────────────────────────────────────────
             Button(
-                onClick  = { viewModel.onStartWorkout(onStartWorkout) },
-                modifier = Modifier.fillMaxWidth().height(60.dp),
-                shape    = RoundedCornerShape(18.dp),
-                colors   = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                onClick   = { viewModel.onStartWorkout(onStartWorkout) },
+                modifier  = Modifier.fillMaxWidth().height(60.dp),
+                shape     = RoundedCornerShape(18.dp),
+                colors    = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 elevation = ButtonDefaults.buttonElevation(4.dp),
             ) {
                 Icon(Icons.Default.PlayArrow, null, Modifier.size(24.dp))
                 Spacer(Modifier.size(8.dp))
-                Text("Начать тренировку", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    "Начать тренировку",
+                    style      = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
             }
 
             // ── Навигационные карточки ────────────────────────────
-            ActionCard("Мои планы", "Выбрать готовый или создать свой", Icons.Default.List, MaterialTheme.colorScheme.secondary, onOpenPlans)
-            ActionCard("Прогресс", "Графики, PR и история тренировок", Icons.Default.BarChart, MaterialTheme.colorScheme.tertiary, onOpenProgress)
-            ActionCard("Упражнения", "База с техникой и рекомендациями", Icons.Default.FitnessCenter, MaterialTheme.colorScheme.primary, onOpenExercises)
-            ActionCard("Анализ тела",     "Ранг по всем мышечным группам", Icons.Default.Accessibility, Color(0xFF7C4DFF), onOpenBodyAnalysis)
-            ActionCard("Ранги упражнений","Ваши результаты по каждому упр.", Icons.Default.EmojiEvents, Color(0xFFF9A825), onOpenExerciseRanks)
+            ActionCard(
+                title      = "Анализ тела",
+                subtitle   = "Ранг по всем мышечным группам",
+                icon       = Icons.Default.Person,
+                accentColor = Color(0xFF7C4DFF),
+                onClick    = onOpenBodyAnalysis,
+            )
+            ActionCard(
+                title      = "Ранги упражнений",
+                subtitle   = "Ваши результаты по каждому упражнению",
+                icon       = Icons.Default.EmojiEvents,
+                accentColor = Color(0xFFF9A825),
+                onClick    = onOpenExerciseRanks,
+            )
+            ActionCard(
+                title      = "Мои планы",
+                subtitle   = "Выбрать готовый или создать свой",
+                icon       = Icons.Default.List,
+                accentColor = MaterialTheme.colorScheme.secondary,
+                onClick    = onOpenPlans,
+            )
+            ActionCard(
+                title      = "Прогресс",
+                subtitle   = "Графики, PR и история тренировок",
+                icon       = Icons.Default.BarChart,
+                accentColor = MaterialTheme.colorScheme.tertiary,
+                onClick    = onOpenProgress,
+            )
+            ActionCard(
+                title      = "Упражнения",
+                subtitle   = "База с техникой и рекомендациями",
+                icon       = Icons.Default.FitnessCenter,
+                accentColor = MaterialTheme.colorScheme.primary,
+                onClick    = onOpenExercises,
+            )
 
             Spacer(Modifier.height(24.dp))
         }

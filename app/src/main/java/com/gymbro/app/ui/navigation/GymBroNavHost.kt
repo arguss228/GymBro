@@ -14,6 +14,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.gymbro.app.ui.bodyrank.BodyAnalysisScreen
+import com.gymbro.app.ui.bodyrank.ExerciseRanksScreen
 import com.gymbro.app.ui.dashboard.DashboardScreen
 import com.gymbro.app.ui.exercises.ExerciseDetailScreen
 import com.gymbro.app.ui.exercises.ExercisesScreen
@@ -32,7 +34,7 @@ private const val NAV_MS = 350
 fun GymBroNavHost() {
     val nav = rememberNavController()
 
-    val slideIn:  AnimatedContentTransitionScope<*>.() -> EnterTransition = {
+    val slideIn: AnimatedContentTransitionScope<*>.() -> EnterTransition = {
         slideInHorizontally(tween(NAV_MS)) { it / 3 } + fadeIn(tween(NAV_MS))
     }
     val slideOut: AnimatedContentTransitionScope<*>.() -> ExitTransition = {
@@ -41,7 +43,7 @@ fun GymBroNavHost() {
     val popEnter: AnimatedContentTransitionScope<*>.() -> EnterTransition = {
         slideInHorizontally(tween(NAV_MS)) { -it / 3 } + fadeIn(tween(NAV_MS))
     }
-    val popExit:  AnimatedContentTransitionScope<*>.() -> ExitTransition = {
+    val popExit: AnimatedContentTransitionScope<*>.() -> ExitTransition = {
         slideOutHorizontally(tween(NAV_MS)) { it / 3 } + fadeOut(tween(NAV_MS))
     }
 
@@ -81,17 +83,27 @@ fun GymBroNavHost() {
 
         composable(Screen.Dashboard.route) {
             DashboardScreen(
-                onStartWorkout  = { sessionId -> nav.navigate(Screen.WorkoutSession.build(sessionId)) },
-                onOpenPlans     = { nav.navigate(Screen.Plans.route) },
-                onOpenProgress  = { nav.navigate(Screen.Progress.route) },
-                onOpenExercises = { nav.navigate(Screen.Exercises.route) },
-                onOpenSettings  = { nav.navigate(Screen.Settings.route) },
-                onOpenRanks     = { nav.navigate(Screen.StrengthRanks.route) },
+                onStartWorkout      = { sessionId -> nav.navigate(Screen.WorkoutSession.build(sessionId)) },
+                onOpenPlans         = { nav.navigate(Screen.Plans.route) },
+                onOpenProgress      = { nav.navigate(Screen.Progress.route) },
+                onOpenExercises     = { nav.navigate(Screen.Exercises.route) },
+                onOpenSettings      = { nav.navigate(Screen.Settings.route) },
+                onOpenRanks         = { nav.navigate(Screen.StrengthRanks.route) },
+                onOpenBodyAnalysis  = { nav.navigate(Screen.BodyAnalysis.route) },
+                onOpenExerciseRanks = { nav.navigate(Screen.ExerciseRanks.route) },
             )
         }
 
         composable(Screen.StrengthRanks.route) {
             StrengthRanksScreen(onBack = { nav.popBackStack() })
+        }
+
+        composable(Screen.BodyAnalysis.route) {
+            BodyAnalysisScreen(onBack = { nav.popBackStack() })
+        }
+
+        composable(Screen.ExerciseRanks.route) {
+            ExerciseRanksScreen(onBack = { nav.popBackStack() })
         }
 
         composable(Screen.Plans.route) {
@@ -143,14 +155,6 @@ fun GymBroNavHost() {
 
         composable(Screen.Settings.route) {
             SettingsScreen(onBack = { nav.popBackStack() })
-        }
-
-        composable(Screen.BodyAnalysis.route) {
-            BodyAnalysisScreen(onBack = { nav.popBackStack() })
-        }
-        
-        composable(Screen.ExerciseRanks.route) {
-            ExerciseRanksScreen(onBack = { nav.popBackStack() })
         }
     }
 }
