@@ -38,6 +38,7 @@ object DatabaseModule {
     @Provides fun providePersonalRecordDao(db: GymBroDatabase): PersonalRecordDao = db.personalRecordDao()
     @Provides fun provideUserProfileDao(db: GymBroDatabase): UserProfileDao   = db.userProfileDao()
     @Provides fun provideOneRmDao(db: GymBroDatabase): OneRmDao               = db.oneRmDao()
+    @Provides fun provideExerciseMaxDao(db: GymBroDatabase): ExerciseMaxDao   = db.exerciseMaxDao()
 
     @Provides
     @Singleton

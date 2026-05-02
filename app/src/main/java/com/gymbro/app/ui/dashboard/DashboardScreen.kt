@@ -54,6 +54,8 @@ fun DashboardScreen(
     onOpenExercises: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenRanks: () -> Unit,
+    onOpenBodyAnalysis: () -> Unit,
+    onOpenExerciseRanks: () -> Unit,
     viewModel: DashboardViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -158,6 +160,8 @@ fun DashboardScreen(
             ActionCard("Мои планы", "Выбрать готовый или создать свой", Icons.Default.List, MaterialTheme.colorScheme.secondary, onOpenPlans)
             ActionCard("Прогресс", "Графики, PR и история тренировок", Icons.Default.BarChart, MaterialTheme.colorScheme.tertiary, onOpenProgress)
             ActionCard("Упражнения", "База с техникой и рекомендациями", Icons.Default.FitnessCenter, MaterialTheme.colorScheme.primary, onOpenExercises)
+            ActionCard("Анализ тела",     "Ранг по всем мышечным группам", Icons.Default.Accessibility, Color(0xFF7C4DFF), onOpenBodyAnalysis)
+            ActionCard("Ранги упражнений","Ваши результаты по каждому упр.", Icons.Default.EmojiEvents, Color(0xFFF9A825), onOpenExerciseRanks)
 
             Spacer(Modifier.height(24.dp))
         }

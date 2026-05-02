@@ -14,6 +14,7 @@ import javax.inject.Singleton
 class ProgressRepository @Inject constructor(
     private val setLogDao: SetLogDao,
     private val prDao: PersonalRecordDao,
+    private val bodyRankRepo: BodyRankRepository,
 ) {
     fun observeSession(sessionId: Long): Flow<List<SetLogEntity>> =
         setLogDao.observeSession(sessionId)
@@ -70,8 +71,10 @@ class ProgressRepository @Inject constructor(
             )
         )
 
-        if (isWarmup) return LogSetResult(logId, emptyList())
-
+        if (isWarmup) {
+         return LogSetResult(logId, emptyList())
+         bodyRankRepo.updateIfBetter(exerciseId, estimated1Rm)
+        }
         val newPrs = mutableListOf<PrType>()
 
         // 1RM PR

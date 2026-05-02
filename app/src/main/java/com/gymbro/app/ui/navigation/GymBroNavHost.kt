@@ -144,5 +144,13 @@ fun GymBroNavHost() {
         composable(Screen.Settings.route) {
             SettingsScreen(onBack = { nav.popBackStack() })
         }
+
+        composable(Screen.BodyAnalysis.route) {
+            BodyAnalysisScreen(onBack = { nav.popBackStack() })
+        }
+        
+        composable(Screen.ExerciseRanks.route) {
+            ExerciseRanksScreen(onBack = { nav.popBackStack() })
+        }
     }
 }

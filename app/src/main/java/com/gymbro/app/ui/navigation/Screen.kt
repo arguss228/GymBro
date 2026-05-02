@@ -6,6 +6,8 @@ sealed class Screen(val route: String) {
     data object Dashboard      : Screen("dashboard")
     data object StrengthRanks  : Screen("strength_ranks")
     data object Plans          : Screen("plans")
+    data object BodyAnalysis   : Screen("body_analysis")
+    data object ExerciseRanks  : Screen("exercise_ranks")
     data object PlanEditor     : Screen("plan_editor?planId={planId}") {
         fun build(planId: Long? = null) = "plan_editor" + (planId?.let { "?planId=$it" } ?: "")
     }
