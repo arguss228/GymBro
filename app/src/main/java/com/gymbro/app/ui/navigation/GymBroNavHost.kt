@@ -17,7 +17,6 @@ import androidx.navigation.navArgument
 import com.gymbro.app.ui.dashboard.DashboardScreen
 import com.gymbro.app.ui.exercises.ExerciseDetailScreen
 import com.gymbro.app.ui.exercises.ExercisesScreen
-import com.gymbro.app.ui.onboarding.OnboardingScreen
 import com.gymbro.app.ui.planeditor.PlanEditorScreen
 import com.gymbro.app.ui.plans.PlansScreen
 import com.gymbro.app.ui.progress.ProgressScreen
@@ -57,11 +56,6 @@ fun GymBroNavHost() {
 
         composable(Screen.Splash.route) {
             SplashScreen(
-                onNeedsOnboarding = {
-                    nav.navigate(Screen.Onboarding.route) {
-                        popUpTo(Screen.Splash.route) { inclusive = true }
-                    }
-                },
                 onNeeds1Rm = {
                     nav.navigate(Screen.Enter1Rm.route) {
                         popUpTo(Screen.Splash.route) { inclusive = true }
@@ -75,17 +69,6 @@ fun GymBroNavHost() {
             )
         }
 
-        composable(Screen.Onboarding.route) {
-            OnboardingScreen(
-                onFinished = {
-                    nav.navigate(Screen.Enter1Rm.route) {
-                        popUpTo(Screen.Onboarding.route) { inclusive = true }
-                    }
-                }
-            )
-        }
-
-        // ── Ввод 1RM (первый запуск) ──────────────────────────────
         composable(Screen.Enter1Rm.route) {
             Enter1RmScreen(
                 onDone = {
@@ -107,7 +90,6 @@ fun GymBroNavHost() {
             )
         }
 
-        // ── Экран рангов ──────────────────────────────────────────
         composable(Screen.StrengthRanks.route) {
             StrengthRanksScreen(onBack = { nav.popBackStack() })
         }
@@ -122,7 +104,10 @@ fun GymBroNavHost() {
 
         composable(
             Screen.PlanEditor.route,
-            arguments = listOf(navArgument("planId") { type = NavType.LongType; defaultValue = -1L }),
+            arguments = listOf(navArgument("planId") {
+                type = NavType.LongType
+                defaultValue = -1L
+            }),
         ) {
             PlanEditorScreen(onBack = { nav.popBackStack() })
         }
@@ -136,14 +121,18 @@ fun GymBroNavHost() {
 
         composable(
             Screen.ExerciseDetail.route,
-            arguments = listOf(navArgument(Screen.ExerciseDetail.ARG_EXERCISE_ID) { type = NavType.LongType }),
+            arguments = listOf(navArgument(Screen.ExerciseDetail.ARG_EXERCISE_ID) {
+                type = NavType.LongType
+            }),
         ) {
             ExerciseDetailScreen(onBack = { nav.popBackStack() })
         }
 
         composable(
             Screen.WorkoutSession.route,
-            arguments = listOf(navArgument(Screen.WorkoutSession.ARG_SESSION_ID) { type = NavType.LongType }),
+            arguments = listOf(navArgument(Screen.WorkoutSession.ARG_SESSION_ID) {
+                type = NavType.LongType
+            }),
         ) {
             WorkoutSessionScreen(onBack = { nav.popBackStack() })
         }

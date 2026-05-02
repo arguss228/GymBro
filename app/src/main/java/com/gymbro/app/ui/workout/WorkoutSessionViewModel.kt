@@ -10,10 +10,10 @@ import com.gymbro.app.data.local.entity.TrainingDayExerciseEntity
 import com.gymbro.app.data.local.entity.WorkoutPlanEntity
 import com.gymbro.app.data.repository.ExerciseRepository
 import com.gymbro.app.data.repository.ProgressRepository
-import com.gymbro.app.data.repository.RankRepository  // ← добавлено
+import com.gymbro.app.data.repository.RankRepository
 import com.gymbro.app.data.repository.WorkoutRepository
 import com.gymbro.app.domain.model.BigThreeLift
-import com.gymbro.app.domain.model.Rank               // предполагаемый класс
+import com.gymbro.app.domain.model.StrengthRank
 import com.gymbro.app.domain.usecase.LogSetUseCase
 import com.gymbro.app.ui.navigation.Screen
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -27,7 +27,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -46,6 +45,7 @@ data class WorkoutSessionUiState(
     val restSecondsRemaining: Int = 0,
     val isLoading: Boolean = true,
     val recentPrMessage: String? = null,
+    val rankUpEvent: StrengthRank? = null,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -54,7 +54,7 @@ class WorkoutSessionViewModel @Inject constructor(
     private val workoutRepo: WorkoutRepository,
     private val exerciseRepo: ExerciseRepository,
     private val progressRepo: ProgressRepository,
-    private val rankRepo: RankRepository,           // ← добавлено
+    private val rankRepo: RankRepository,
     private val logSetUseCase: LogSetUseCase,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
@@ -65,10 +65,7 @@ class WorkoutSessionViewModel @Inject constructor(
     private val selectedDayIdFlow = MutableStateFlow<Long?>(null)
     private val restFlow = MutableStateFlow(0)
     private val messageFlow = MutableStateFlow<String?>(null)
-
-    // Новое: событие повышения ранга после сета
-    private val _rankUpForSession = MutableStateFlow<Rank?>(null)
-    val rankUpForSession: StateFlow<Rank?> = _rankUpForSession.asStateFlow()
+    private val rankUpFlow = MutableStateFlow<StrengthRank?>(null)
 
     private var restJob: Job? = null
 
@@ -91,8 +88,8 @@ class WorkoutSessionViewModel @Inject constructor(
                 progressRepo.observeSession(sessionId),
                 selectedDayIdFlow,
                 restFlow,
-                messageFlow,
-            ) { entries, logs, dayId, rest, message ->
+                combine(messageFlow, rankUpFlow) { msg, rankUp -> msg to rankUp },
+            ) { entries, logs, dayId, rest, (message, rankUp) ->
                 val byId = entries
                     .map { it.exerciseId }
                     .distinct()
@@ -116,6 +113,7 @@ class WorkoutSessionViewModel @Inject constructor(
                     exercises = exerciseItems,
                     restSecondsRemaining = rest,
                     recentPrMessage = message,
+                    rankUpEvent = rankUp,
                     isLoading = false,
                 )
             }.collect { _state.value = it }
@@ -143,27 +141,24 @@ class WorkoutSessionViewModel @Inject constructor(
                 )
             )
 
-            // === Автообновление 1RM для Big Three ===
+            // Автообновление 1RM для Big Three при одном повторении
             if (reps == 1) {
                 val lift = BigThreeLift.fromSeedId(exerciseId)
                 if (lift != null) {
                     val newRank = rankRepo.updateIfBetter(
-                        bench = if (lift == BigThreeLift.BENCH_PRESS) weightKg else null,
-                        squat = if (lift == BigThreeLift.BACK_SQUAT) weightKg else null,
-                        deadlift = if (lift == BigThreeLift.DEADLIFT) weightKg else null,
+                        bench    = if (lift == BigThreeLift.BENCH_PRESS) weightKg else null,
+                        squat    = if (lift == BigThreeLift.BACK_SQUAT)  weightKg else null,
+                        deadlift = if (lift == BigThreeLift.DEADLIFT)    weightKg else null,
                     )
-
                     if (newRank != null) {
-                        _rankUpForSession.value = newRank
-                        // Автосброс через 4 секунды (можно изменить)
+                        rankUpFlow.value = newRank
                         launch {
                             delay(4000)
-                            _rankUpForSession.value = null
+                            rankUpFlow.value = null
                         }
                     }
                 }
             }
-            // =====================================
 
             if (res.newPrTypes.isNotEmpty()) {
                 messageFlow.value = "🎉 Новый рекорд!"
@@ -194,5 +189,8 @@ class WorkoutSessionViewModel @Inject constructor(
         restJob?.cancel()
         restFlow.value = 0
     }
-    
+
+    fun dismissRankUp() {
+        rankUpFlow.value = null
+    }
 }

@@ -22,25 +22,39 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun SplashScreen(
-    onNeedsOnboarding: () -> Unit,  // старый onboarding (имя и т.д.) — оставляем для совместимости
-    onNeeds1Rm: () -> Unit,         // новый: ввод 1RM
+    onNeeds1Rm: () -> Unit,
     onReady: () -> Unit,
     viewModel: SplashViewModel = hiltViewModel(),
 ) {
     LaunchedEffect(Unit) {
         delay(500)
         when {
-            !viewModel.isOnboardingCompleted() -> onNeedsOnboarding()
+            !viewModel.isOnboardingCompleted() -> onNeeds1Rm()
             viewModel.needs1RmEntry()          -> onNeeds1Rm()
             else                               -> onReady()
         }
     }
 
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Icon(Icons.Default.FitnessCenter, null, Modifier.size(96.dp), tint = MaterialTheme.colorScheme.primary)
-            Text("GymBro", style = MaterialTheme.typography.displayMedium, color = MaterialTheme.colorScheme.onBackground)
-            CircularProgressIndicator(Modifier.padding(top = 24.dp), color = MaterialTheme.colorScheme.primary)
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Icon(
+                Icons.Default.FitnessCenter,
+                contentDescription = null,
+                modifier = Modifier.size(96.dp),
+                tint = MaterialTheme.colorScheme.primary,
+            )
+            Text(
+                "GymBro",
+                style = MaterialTheme.typography.displayMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            CircularProgressIndicator(
+                modifier = Modifier.padding(top = 24.dp),
+                color = MaterialTheme.colorScheme.primary,
+            )
         }
     }
 }

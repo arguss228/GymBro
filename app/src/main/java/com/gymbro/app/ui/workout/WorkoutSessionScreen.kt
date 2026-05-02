@@ -46,13 +46,13 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gymbro.app.data.local.entity.SetLogEntity
+import com.gymbro.app.ui.rank.RankUpDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,13 +62,19 @@ fun WorkoutSessionScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
+    // Анимация повышения ранга
+    state.rankUpEvent?.let { newRank ->
+        RankUpDialog(
+            newRank   = newRank,
+            onDismiss = { viewModel.dismissRankUp() },
+        )
+    }
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = {
-                    Text(state.activePlan?.name ?: "Тренировка")
-                },
+                title = { Text(state.activePlan?.name ?: "Тренировка") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
@@ -96,7 +102,10 @@ fun WorkoutSessionScreen(
 
         if (state.activePlan == null) {
             Box(
-                modifier = Modifier.fillMaxSize().padding(inner).padding(24.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(inner)
+                    .padding(24.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
@@ -120,8 +129,8 @@ fun WorkoutSessionScreen(
                     state.days.forEach { day ->
                         FilterChip(
                             selected = state.selectedDayId == day.id,
-                            onClick = { viewModel.selectDay(day.id) },
-                            label = { Text(day.name) },
+                            onClick  = { viewModel.selectDay(day.id) },
+                            label    = { Text(day.name) },
                         )
                     }
                 }
@@ -130,20 +139,20 @@ fun WorkoutSessionScreen(
             // Rest timer banner
             AnimatedVisibility(
                 visible = state.restSecondsRemaining > 0,
-                enter = slideInVertically { -it },
-                exit = slideOutVertically { -it },
+                enter   = slideInVertically { -it },
+                exit    = slideOutVertically { -it },
             ) {
                 RestBanner(
                     seconds = state.restSecondsRemaining,
-                    onSkip = viewModel::skipRest,
+                    onSkip  = viewModel::skipRest,
                 )
             }
 
             // PR celebration
             AnimatedVisibility(
                 visible = state.recentPrMessage != null,
-                enter = slideInVertically { -it },
-                exit = slideOutVertically { -it },
+                enter   = slideInVertically { -it },
+                exit    = slideOutVertically { -it },
             ) {
                 Box(
                     modifier = Modifier
@@ -154,8 +163,8 @@ fun WorkoutSessionScreen(
                 ) {
                     Text(
                         state.recentPrMessage ?: "",
-                        color = MaterialTheme.colorScheme.onTertiaryContainer,
-                        style = MaterialTheme.typography.titleMedium,
+                        color      = MaterialTheme.colorScheme.onTertiaryContainer,
+                        style      = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                     )
                 }
@@ -164,18 +173,18 @@ fun WorkoutSessionScreen(
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                    horizontal = 16.dp, vertical = 8.dp
+                    horizontal = 16.dp, vertical = 8.dp,
                 ),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 items(state.exercises, key = { it.planEntry.id }) { item ->
                     ExerciseCard(
-                        ui = item,
+                        ui    = item,
                         onLog = { w, r ->
                             viewModel.logSet(
-                                exerciseId = item.exercise.id,
-                                weightKg = w,
-                                reps = r,
+                                exerciseId  = item.exercise.id,
+                                weightKg    = w,
+                                reps        = r,
                                 restSeconds = item.planEntry.restSeconds,
                             )
                         },
@@ -195,25 +204,17 @@ private fun RestBanner(seconds: Int, onSkip: () -> Unit) {
             .padding(12.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                Icons.Default.Timer,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onPrimary,
-            )
+            Icon(Icons.Default.Timer, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
             Spacer(Modifier.width(8.dp))
             Text(
                 "Отдых: ${seconds}с",
-                color = MaterialTheme.colorScheme.onPrimary,
-                style = MaterialTheme.typography.titleMedium,
+                color      = MaterialTheme.colorScheme.onPrimary,
+                style      = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.weight(1f),
+                modifier   = Modifier.weight(1f),
             )
             TextButton(onClick = onSkip) {
-                Icon(
-                    Icons.Default.SkipNext,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                )
+                Icon(Icons.Default.SkipNext, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
                 Spacer(Modifier.width(4.dp))
                 Text("Пропустить", color = MaterialTheme.colorScheme.onPrimary)
             }
@@ -226,10 +227,9 @@ private fun ExerciseCard(
     ui: WorkoutExerciseUi,
     onLog: (weightKg: Double, reps: Int) -> Unit,
 ) {
-    // Inputs, pre-filled with target weight from plan or last-session weight.
     val initialWeight = remember(ui.exercise.id) {
         mutableStateMapOf<Long, String>().also { map ->
-            val fromPlan = ui.planEntry.targetWeightKg?.toString() ?: ""
+            val fromPlan   = ui.planEntry.targetWeightKg?.toString() ?: ""
             val lastWeight = ui.loggedSets.lastOrNull()?.weightKg?.toString() ?: fromPlan
             map[ui.exercise.id] = lastWeight
         }
@@ -244,24 +244,22 @@ private fun ExerciseCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        ),
+        shape    = RoundedCornerShape(16.dp),
+        colors   = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
     ) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     ui.exercise.name,
-                    style = MaterialTheme.typography.titleMedium,
+                    style      = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f),
-                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier   = Modifier.weight(1f),
+                    color      = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
                     "${ui.loggedSets.size} / ${ui.planEntry.targetSets}",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
+                    style      = MaterialTheme.typography.titleMedium,
+                    color      = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold,
                 )
             }
@@ -271,52 +269,43 @@ private fun ExerciseCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
-            // Previously logged sets
             if (ui.loggedSets.isNotEmpty()) {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    ui.loggedSets.forEach { set ->
-                        SetLogRow(set)
-                    }
+                    ui.loggedSets.forEach { set -> SetLogRow(set) }
                 }
             }
 
-            // Input row
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier              = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment     = Alignment.CenterVertically,
             ) {
                 OutlinedTextField(
-                    value = weightText,
+                    value         = weightText,
                     onValueChange = { s ->
-                        if (s.all { it.isDigit() || it == '.' || it == ',' }) {
+                        if (s.all { it.isDigit() || it == '.' || it == ',' })
                             initialWeight[ui.exercise.id] = s.replace(',', '.')
-                        }
                     },
-                    label = { Text("Вес") },
+                    label           = { Text("Вес") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    modifier = Modifier.weight(1f),
-                    singleLine = true,
+                    modifier        = Modifier.weight(1f),
+                    singleLine      = true,
                 )
                 OutlinedTextField(
-                    value = repsText,
-                    onValueChange = { s ->
-                        if (s.all { it.isDigit() }) repsTextInit[ui.exercise.id] = s
-                    },
-                    label = { Text("Повторов") },
+                    value         = repsText,
+                    onValueChange = { s -> if (s.all { it.isDigit() }) repsTextInit[ui.exercise.id] = s },
+                    label           = { Text("Повторов") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.weight(1f),
-                    singleLine = true,
+                    modifier        = Modifier.weight(1f),
+                    singleLine      = true,
                 )
                 Button(
                     onClick = {
                         val w = weightText.toDoubleOrNull() ?: return@Button
-                        val r = repsText.toIntOrNull() ?: return@Button
+                        val r = repsText.toIntOrNull()      ?: return@Button
                         onLog(w, r)
                     },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    ),
+                    colors   = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                     modifier = Modifier.height(56.dp),
                 ) {
                     Icon(Icons.Default.Check, contentDescription = "Залогировать")
@@ -329,7 +318,7 @@ private fun ExerciseCard(
 @Composable
 private fun SetLogRow(set: SetLogEntity) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier              = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(
@@ -339,8 +328,8 @@ private fun SetLogRow(set: SetLogEntity) {
         )
         Text(
             "${set.weightKg.formatKg()} × ${set.reps}  (1RM ≈ ${set.estimated1Rm.formatKg()})",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
+            style      = MaterialTheme.typography.bodyMedium,
+            color      = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.SemiBold,
         )
     }

@@ -23,7 +23,6 @@ import kotlinx.coroutines.flow.stateIn
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
-/** Фильтр по временному периоду для графика прогресса. */
 enum class ProgressPeriod(val label: String, val months: Int?) {
     ONE_MONTH("1 мес", 1),
     THREE_MONTHS("3 мес", 3),
@@ -36,18 +35,12 @@ data class ProgressUiState(
     val level: StrengthLevel = StrengthLevel.PLACEHOLDER,
     val totalSessions: Int = 0,
     val personalRecords: List<PrWithExercise> = emptyList(),
-
-    // Список всех упражнений (для поиска)
     val allExercises: List<ExerciseEntity> = emptyList(),
-    // Отфильтрованные по поисковому запросу
     val filteredExercises: List<ExerciseEntity> = emptyList(),
-
     val searchQuery: String = "",
     val selectedExerciseId: Long = BigThreeLift.BENCH_PRESS.seedId,
     val selectedExerciseName: String = "",
     val selectedPeriod: ProgressPeriod = ProgressPeriod.SIX_MONTHS,
-
-    /** Точки графика: (timestamp, runningMaxWeight) — только нарастающие максимумы. */
     val chartPoints: List<Pair<Long, Float>> = emptyList(),
 )
 
@@ -65,10 +58,9 @@ class ProgressViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val selectedExerciseIdFlow = MutableStateFlow(BigThreeLift.BENCH_PRESS.seedId)
-    private val selectedPeriodFlow = MutableStateFlow(ProgressPeriod.SIX_MONTHS)
-    private val searchQueryFlow = MutableStateFlow("")
+    private val selectedPeriodFlow     = MutableStateFlow(ProgressPeriod.SIX_MONTHS)
+    private val searchQueryFlow        = MutableStateFlow("")
 
-    /** Поток подходов для выбранного упражнения + выбранного периода. */
     private val historyFlow = combine(
         selectedExerciseIdFlow,
         selectedPeriodFlow,
@@ -81,7 +73,6 @@ class ProgressViewModel @Inject constructor(
         progressRepo.observeExerciseHistorySince(id, since)
     }
 
-    /** Результаты поиска по упражнениям с debounce. */
     private val searchResultsFlow = searchQueryFlow
         .debounce(150)
         .flatMapLatest { q -> exerciseRepo.search(q) }
@@ -105,27 +96,24 @@ class ProgressViewModel @Inject constructor(
         val prItems = prs.mapNotNull { pr ->
             byId[pr.exerciseId]?.let { ex -> PrWithExercise(pr, ex.name) }
         }
-
-        // Вычисляем нарастающий максимум (running max) — график никогда не падает.
         val chartPoints = buildRunningMaxChart(partial.history)
 
         ProgressUiState(
-            level = level,
-            totalSessions = sessions,
-            personalRecords = prItems,
-            allExercises = allExercises,
-            filteredExercises = if (partial.searchQuery.isBlank()) allExercises else partial.searchResults,
-            searchQuery = partial.searchQuery,
-            selectedExerciseId = partial.selectedExerciseId,
+            level                = level,
+            totalSessions        = sessions,
+            personalRecords      = prItems,
+            allExercises         = allExercises,
+            filteredExercises    = if (partial.searchQuery.isBlank()) allExercises else partial.searchResults,
+            searchQuery          = partial.searchQuery,
+            selectedExerciseId   = partial.selectedExerciseId,
             selectedExerciseName = byId[partial.selectedExerciseId]?.name ?: "",
-            selectedPeriod = partial.selectedPeriod,
-            chartPoints = chartPoints,
+            selectedPeriod       = partial.selectedPeriod,
+            chartPoints          = chartPoints,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ProgressUiState())
 
     fun selectExercise(id: Long) {
         selectedExerciseIdFlow.value = id
-        // Сбрасываем поисковый запрос после выбора
         searchQueryFlow.value = ""
     }
 
@@ -137,18 +125,10 @@ class ProgressViewModel @Inject constructor(
         searchQueryFlow.value = query
     }
 
-    /**
-     * Строит список точек (timestamp, runningMax) из сырых подходов.
-     * Точка добавляется только когда вес превышает текущий исторический максимум.
-     * Это обеспечивает «ступенчатый» (step-like) нарастающий график.
-     */
     private fun buildRunningMaxChart(sets: List<SetLogEntity>): List<Pair<Long, Float>> {
         if (sets.isEmpty()) return emptyList()
-
         val result = mutableListOf<Pair<Long, Float>>()
         var runningMax = 0.0
-
-        // Подходы уже отсортированы по времени (ASC) из DAO.
         for (set in sets) {
             if (set.weightKg > runningMax) {
                 runningMax = set.weightKg
@@ -158,7 +138,6 @@ class ProgressViewModel @Inject constructor(
         return result
     }
 
-    // Вспомогательный data class для промежуточного combine.
     private data class PartialState(
         val selectedExerciseId: Long,
         val selectedPeriod: ProgressPeriod,
