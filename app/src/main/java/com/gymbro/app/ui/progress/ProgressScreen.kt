@@ -51,7 +51,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gymbro.app.data.local.entity.ExerciseEntity
 import com.gymbro.app.data.local.entity.PrType
-import com.gymbro.app.ui.components.LevelCard
 import com.gymbro.app.ui.components.ProgressChart
 import com.gymbro.app.ui.rank.RankDashboardCard
 
@@ -59,6 +58,7 @@ import com.gymbro.app.ui.rank.RankDashboardCard
 @Composable
 fun ProgressScreen(
     onBack: () -> Unit,
+    isEmbedded: Boolean = false,
     viewModel: ProgressViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -67,17 +67,19 @@ fun ProgressScreen(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            TopAppBar(
-                title = { Text("Прогресс") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                ),
-            )
+            if (!isEmbedded) {
+                TopAppBar(
+                    title = { Text("Прогресс") },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background,
+                    ),
+                )
+            }
         },
     ) { inner ->
         LazyColumn(
@@ -89,14 +91,13 @@ fun ProgressScreen(
                 start = 16.dp, end = 16.dp, top = 8.dp, bottom = 32.dp
             ),
         ) {
-           item {
-        RankDashboardCard(
-        state       = state.rankState,
-        onOpenRanks = {},
-    )
-}
+            item {
+                RankDashboardCard(
+                    state = state.rankState,
+                    onOpenRanks = {},
+                )
+            }
 
-            // Статистика
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -115,7 +116,6 @@ fun ProgressScreen(
                 }
             }
 
-            // Заголовок секции графика
             item {
                 Text(
                     "График максимальных весов",
@@ -124,7 +124,6 @@ fun ProgressScreen(
                 )
             }
 
-            // Поиск упражнения
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
                     OutlinedTextField(
@@ -138,20 +137,12 @@ fun ProgressScreen(
                             )
                         },
                         leadingIcon = {
-                            Icon(
-                                Icons.Default.Search,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
+                            Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                         },
                         trailingIcon = {
                             if (state.searchQuery.isNotEmpty()) {
                                 IconButton(onClick = { viewModel.setSearchQuery("") }) {
-                                    Icon(
-                                        Icons.Default.Close,
-                                        contentDescription = "Очистить",
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
+                                    Icon(Icons.Default.Close, contentDescription = "Очистить", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         },
@@ -168,20 +159,15 @@ fun ProgressScreen(
                         ),
                     )
 
-                    // Выпадающий список упражнений (показывается при вводе или фокусе с текстом)
                     AnimatedVisibility(
                         visible = state.searchQuery.isNotEmpty(),
                         enter = expandVertically() + fadeIn(),
                         exit = shrinkVertically() + fadeOut(),
                     ) {
                         Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 4.dp),
+                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                             shape = RoundedCornerShape(14.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            ),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                         ) {
                             Column {
@@ -216,7 +202,6 @@ fun ProgressScreen(
                 }
             }
 
-            // Фильтры периода
             item {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(ProgressPeriod.values()) { period ->
@@ -233,22 +218,15 @@ fun ProgressScreen(
                 }
             }
 
-            // График
             item {
                 if (state.chartPoints.isEmpty()) {
                     Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                         shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        ),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                     ) {
                         Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 48.dp),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
@@ -274,7 +252,6 @@ fun ProgressScreen(
                 }
             }
 
-            // Личные рекорды
             if (state.personalRecords.isNotEmpty()) {
                 item {
                     Text(
@@ -310,10 +287,7 @@ private fun ExerciseSearchItem(
                 exercise.name,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                color = if (isSelected)
-                    MaterialTheme.colorScheme.primary
-                else
-                    MaterialTheme.colorScheme.onSurface,
+                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
             )
             Text(
                 "${exercise.category.name.lowercase().replaceFirstChar { it.uppercase() }} · ${exercise.primaryMuscle}",
@@ -322,44 +296,21 @@ private fun ExerciseSearchItem(
             )
         }
         if (isSelected) {
-            Icon(
-                Icons.Default.EmojiEvents,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(end = 4.dp),
-            )
+            Icon(Icons.Default.EmojiEvents, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(end = 4.dp))
         }
     }
 }
 
 @Composable
-private fun StatCard(
-    title: String,
-    value: String,
-    modifier: Modifier = Modifier,
-) {
+private fun StatCard(title: String, value: String, modifier: Modifier = Modifier) {
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        ),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Text(
-                title,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                value,
-                style = MaterialTheme.typography.headlineLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Black,
-            )
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(title, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(value, style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Black)
         }
     }
 }
@@ -369,39 +320,15 @@ private fun PrRow(item: PrWithExercise) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        ),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                Icons.Default.EmojiEvents,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.tertiary,
-            )
+        Row(modifier = Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Default.EmojiEvents, null, tint = MaterialTheme.colorScheme.tertiary)
             Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
-                Text(
-                    item.exerciseName,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    labelFor(item.pr.type),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Text(item.exerciseName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text(labelFor(item.pr.type), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Text(
-                formatPrValue(item),
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold,
-            )
+            Text(formatPrValue(item), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -416,10 +343,7 @@ private fun formatPrValue(item: PrWithExercise): String {
     val kg = item.pr.weightKg
     val rounded = if (kg % 1.0 == 0.0) kg.toInt().toString() else "%.1f".format(kg)
     return when (item.pr.type) {
-        PrType.ONE_RM -> "≈ ${
-            if (item.pr.estimated1Rm % 1.0 == 0.0) item.pr.estimated1Rm.toInt().toString()
-            else "%.1f".format(item.pr.estimated1Rm)
-        } кг"
+        PrType.ONE_RM -> "≈ ${if (item.pr.estimated1Rm % 1.0 == 0.0) item.pr.estimated1Rm.toInt().toString() else "%.1f".format(item.pr.estimated1Rm)} кг"
         PrType.FIVE_RM -> "$rounded × ${item.pr.reps}"
         PrType.SESSION_VOLUME -> "$rounded кг"
     }

@@ -44,6 +44,7 @@ fun ExercisesScreen(
     onExerciseClick: ((Long) -> Unit)? = null,
     /** Клик по упражнению для выбора из PlanEditor (режим пикера). */
     onPickExercise: ((Long) -> Unit)? = null,
+    isEmbedded: Boolean = false, 
     viewModel: ExercisesViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -53,19 +54,15 @@ fun ExercisesScreen(
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            TopAppBar(
-                title = { Text(title) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                ),
+       topBar = {
+     if (!isEmbedded) {
+         TopAppBar(
+             title = { Text(title) },
+             navigationIcon = { IconButton(onClick = onBack) {  } },
+             colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )
-        },
+        }
+    },
     ) { inner ->
         Column(Modifier.fillMaxSize().padding(inner)) {
             OutlinedTextField(

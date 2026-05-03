@@ -3,7 +3,15 @@ package com.gymbro.app.ui.navigation
 sealed class Screen(val route: String) {
     data object Splash          : Screen("splash")
     data object Enter1Rm        : Screen("enter_1rm")
-    data object Dashboard       : Screen("dashboard")
+
+    // ── Bottom Navigation destinations ────────────────────────────
+    data object Home            : Screen("home")          // Главная (центр)
+    data object Workouts        : Screen("workouts")      // Тренировки
+    data object Progress        : Screen("progress")      // Прогресс
+    data object BodyAnalysisTab : Screen("body_tab")      // Анализ тела
+    data object Profile         : Screen("profile")       // Профиль
+
+    // ── Nested / Detail screens ───────────────────────────────────
     data object StrengthRanks   : Screen("strength_ranks")
     data object BodyAnalysis    : Screen("body_analysis")
     data object ExerciseRanks   : Screen("exercise_ranks")
@@ -20,6 +28,5 @@ sealed class Screen(val route: String) {
         fun build(sessionId: Long) = "workout/$sessionId"
         const val ARG_SESSION_ID = "sessionId"
     }
-    data object Progress        : Screen("progress")
     data object Settings        : Screen("settings")
 }

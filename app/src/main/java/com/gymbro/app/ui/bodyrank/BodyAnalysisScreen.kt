@@ -42,6 +42,7 @@ import androidx.compose.foundation.BorderStroke
 @Composable
 fun BodyAnalysisScreen(
     onBack: () -> Unit,
+    isEmbedded: Boolean = false,    
     viewModel: BodyAnalysisViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -61,22 +62,36 @@ fun BodyAnalysisScreen(
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            TopAppBar(
-                title = { Text("Анализ тела", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { viewModel.openAddDialog() }) {
-                        Icon(Icons.Default.Add, "Добавить данные", tint = MaterialTheme.colorScheme.primary)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
-            )
-        },
+   topBar = {
+     if (!isEmbedded) {                   
+             TopAppBar(
+             title = { Text("Анализ тела", fontWeight = FontWeight.Bold) },
+             navigationIcon = {
+                 IconButton(onClick = onBack) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад")
+                }
+             },
+             actions = {
+                 IconButton(onClick = { viewModel.openAddDialog() }) {
+                     Icon(Icons.Default.Add, "Добавить данные", tint = MaterialTheme.colorScheme.primary)
+                 }
+             },
+             colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
+         )
+     } else {
+         // Embedded: показать только кнопку добавления
+         Box(
+             modifier = Modifier
+                 .fillMaxWidth()
+                 .padding(horizontal = 16.dp, vertical = 8.dp),
+             contentAlignment = Alignment.CenterEnd,
+         ) {
+             IconButton(onClick = { viewModel.openAddDialog() }) {
+                Icon(Icons.Default.Add, "Добавить данные", tint = MaterialTheme.colorScheme.primary)
+             }
+         }
+     }
+   },
     ) { inner ->
         if (state.isLoading) {
             Box(Modifier.fillMaxSize().padding(inner), Alignment.Center) {

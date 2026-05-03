@@ -25,6 +25,7 @@ import com.gymbro.app.domain.model.ExerciseRank
 @Composable
 fun ExerciseRanksScreen(
     onBack: () -> Unit,
+    isEmbedded: Boolean = false,
     viewModel: BodyAnalysisViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -32,12 +33,14 @@ fun ExerciseRanksScreen(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            TopAppBar(
-                title = { Text("Ранги упражнений", fontWeight = FontWeight.Bold) },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад") } },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
+     if (!isEmbedded) {
+         TopAppBar(
+             title = { Text("Ранги упражнений", fontWeight = FontWeight.Bold) },
+             navigationIcon = { IconButton(onClick = onBack) { } },
+             colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )
-        },
+        }
+    },
     ) { inner ->
         val allExerciseRanks = state.bodyRank?.muscleGroups
             ?.flatMap { it.exerciseRanks }

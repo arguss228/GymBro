@@ -55,6 +55,7 @@ fun PlansScreen(
     onBack: () -> Unit,
     onCreatePlan: () -> Unit,
     onEditPlan: (Long) -> Unit,
+    isEmbedded: Boolean = false,
     viewModel: PlansViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -62,17 +63,19 @@ fun PlansScreen(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            TopAppBar(
-                title = { Text("Планы тренировок") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                ),
-            )
+            if (!isEmbedded) {
+                TopAppBar(
+                    title = { Text("Планы тренировок") },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background,
+                    ),
+                )
+            }
         },
         floatingActionButton = {
             FloatingActionButton(
@@ -181,7 +184,6 @@ private fun PlanCard(
         ),
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            // ── Main info row ──
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -189,7 +191,6 @@ private fun PlanCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                // Icon
                 Box(
                     modifier = Modifier
                         .size(48.dp)
@@ -204,7 +205,6 @@ private fun PlanCard(
                     )
                 }
 
-                // Text
                 Column(Modifier.weight(1f)) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -241,7 +241,6 @@ private fun PlanCard(
                 }
             }
 
-            // ── Action row (only for non-locked plans) ──
             if (!isLocked) {
                 HorizontalDivider(
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
@@ -254,7 +253,6 @@ private fun PlanCard(
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    // Set active (if not already active)
                     if (!isActive) {
                         androidx.compose.material3.TextButton(onClick = onSetActive) {
                             Icon(
@@ -266,8 +264,6 @@ private fun PlanCard(
                             Text("Выбрать")
                         }
                     }
-
-                    // Edit button — visible for ALL non-locked plans (including preset)
                     IconButton(onClick = onEdit) {
                         Icon(
                             Icons.Default.Edit,
@@ -275,8 +271,6 @@ private fun PlanCard(
                             tint = MaterialTheme.colorScheme.primary,
                         )
                     }
-
-                    // Delete — only user plans
                     if (!plan.isPreset) {
                         IconButton(onClick = onDelete) {
                             Icon(
