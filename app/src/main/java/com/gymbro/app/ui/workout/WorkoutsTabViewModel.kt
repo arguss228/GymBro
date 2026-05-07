@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class WorkoutsTabUiState(
+    val allPlans: List<WorkoutPlanEntity> = emptyList(),
     val userPlans: List<WorkoutPlanEntity> = emptyList(),
     val activePlanId: Long? = null,
     val userLevel: Int = 1,
@@ -32,7 +33,7 @@ class WorkoutsTabViewModel @Inject constructor(
         observeLevel(),
     ) { plans, active, level ->
         WorkoutsTabUiState(
-            // Только пользовательские планы (не preset)
+            allPlans     = plans,
             userPlans    = plans.filter { !it.isPreset },
             activePlanId = active?.id,
             userLevel    = level.level,

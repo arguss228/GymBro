@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
@@ -55,6 +56,7 @@ fun PlansScreen(
     onBack: () -> Unit,
     onCreatePlan: () -> Unit,
     onEditPlan: (Long) -> Unit,
+    onViewPlan: (Long) -> Unit = {},
     isEmbedded: Boolean = false,
     viewModel: PlansViewModel = hiltViewModel(),
 ) {
@@ -113,7 +115,7 @@ fun PlansScreen(
                         plan = plan,
                         isActive = plan.id == state.activePlanId,
                         isLocked = plan.minLevel > state.userLevel,
-                        onSetActive = { viewModel.setActive(plan.id) },
+                        onClick = { onViewPlan(plan.id) },
                         onEdit = { onEditPlan(plan.id) },
                         onDelete = { viewModel.deletePlan(plan.id) },
                     )
@@ -163,7 +165,7 @@ private fun PlanCard(
     plan: WorkoutPlanEntity,
     isActive: Boolean,
     isLocked: Boolean,
-    onSetActive: () -> Unit,
+    onClick: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
@@ -172,9 +174,7 @@ private fun PlanCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(enabled = !isLocked) {
-                if (!isActive) onSetActive()
-            },
+            .clickable(enabled = !isLocked) { onClick() },
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isActive)
@@ -230,6 +230,14 @@ private fun PlanCard(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    if (isActive) {
+                        Text(
+                            "Активный план",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
                     plan.description?.let {
                         Text(
                             it,
@@ -238,6 +246,16 @@ private fun PlanCard(
                             maxLines = 2,
                         )
                     }
+                }
+
+                // Arrow indicating clickable for detail
+                if (!isLocked) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                        modifier = Modifier.size(20.dp),
+                    )
                 }
             }
 
@@ -253,17 +271,6 @@ private fun PlanCard(
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    if (!isActive) {
-                        androidx.compose.material3.TextButton(onClick = onSetActive) {
-                            Icon(
-                                Icons.Default.CheckCircle,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                            )
-                            androidx.compose.foundation.layout.Spacer(Modifier.size(4.dp))
-                            Text("Выбрать")
-                        }
-                    }
                     IconButton(onClick = onEdit) {
                         Icon(
                             Icons.Default.Edit,

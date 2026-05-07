@@ -19,6 +19,10 @@ sealed class Screen(val route: String) {
     data object PlanEditor      : Screen("plan_editor?planId={planId}") {
         fun build(planId: Long? = null) = "plan_editor" + (planId?.let { "?planId=$it" } ?: "")
     }
+    data object PlanDetail      : Screen("plan_detail/{planId}") {
+        fun build(planId: Long) = "plan_detail/$planId"
+        const val ARG_PLAN_ID = "planId"
+    }
     data object Exercises       : Screen("exercises")
     data object ExerciseDetail  : Screen("exercise_detail/{exerciseId}") {
         fun build(exerciseId: Long) = "exercise_detail/$exerciseId"

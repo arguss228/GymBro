@@ -26,6 +26,7 @@ import com.gymbro.app.ui.bodytab.BodyAnalysisTabScreen
 import com.gymbro.app.ui.exercises.ExerciseDetailScreen
 import com.gymbro.app.ui.exercises.ExercisesScreen
 import com.gymbro.app.ui.home.HomeScreen
+import com.gymbro.app.ui.plandetail.TrainingPlanDetailScreen
 import com.gymbro.app.ui.planeditor.PlanEditorScreen
 import com.gymbro.app.ui.plans.PlansScreen
 import com.gymbro.app.ui.profile.ProfileScreen
@@ -81,7 +82,6 @@ fun GymBroNavHost() {
             navController = nav,
             startDestination = Screen.Splash.route,
             modifier = Modifier.padding(innerPadding),
-            // Default transitions (for detail screens)
             enterTransition = slideIn,
             exitTransition = slideOut,
             popEnterTransition = popEnter,
@@ -142,6 +142,7 @@ fun GymBroNavHost() {
                 WorkoutsTabScreen(
                     onCreatePlan = { nav.navigate(Screen.PlanEditor.build(null)) },
                     onEditPlan = { id -> nav.navigate(Screen.PlanEditor.build(id)) },
+                    onViewPlan = { id -> nav.navigate(Screen.PlanDetail.build(id)) },
                     onExerciseClick = { id -> nav.navigate(Screen.ExerciseDetail.build(id)) },
                 )
             }
@@ -182,7 +183,7 @@ fun GymBroNavHost() {
                 ProfileScreen()
             }
 
-            // ── Detail screens (with slide animation) ────────────────
+            // ── Detail screens ────────────────────────────────────────
 
             composable(Screen.StrengthRanks.route) {
                 StrengthRanksScreen(onBack = { nav.popBackStack() })
@@ -201,6 +202,20 @@ fun GymBroNavHost() {
                     onBack = { nav.popBackStack() },
                     onCreatePlan = { nav.navigate(Screen.PlanEditor.build(null)) },
                     onEditPlan = { id -> nav.navigate(Screen.PlanEditor.build(id)) },
+                    onViewPlan = { id -> nav.navigate(Screen.PlanDetail.build(id)) },
+                )
+            }
+
+            // ── Plan Detail ──────────────────────────────────────────
+            composable(
+                Screen.PlanDetail.route,
+                arguments = listOf(navArgument(Screen.PlanDetail.ARG_PLAN_ID) {
+                    type = NavType.LongType
+                }),
+            ) {
+                TrainingPlanDetailScreen(
+                    onBack = { nav.popBackStack() },
+                    onEdit = { id -> nav.navigate(Screen.PlanEditor.build(id)) },
                 )
             }
 
