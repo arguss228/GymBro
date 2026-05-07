@@ -34,10 +34,14 @@ enum class ProgressPeriod(val label: String, val months: Int?) {
     ALL_TIME("Всё время", null),
 }
 
+// Точка на графике: (timestamp, вес в кг)
+data class ChartPoint(val timestampMs: Long, val weightKg: Float)
+
 data class ProgressUiState(
-    val rankState: RankState = RankState(), 
+    val rankState: RankState = RankState(),
     val level: StrengthLevel = StrengthLevel.PLACEHOLDER,
     val totalSessions: Int = 0,
+    val winStreak: Int = 7, // Пока тестовое значение
     val personalRecords: List<PrWithExercise> = emptyList(),
     val allExercises: List<ExerciseEntity> = emptyList(),
     val filteredExercises: List<ExerciseEntity> = emptyList(),
@@ -45,7 +49,12 @@ data class ProgressUiState(
     val selectedExerciseId: Long = BigThreeLift.BENCH_PRESS.seedId,
     val selectedExerciseName: String = "",
     val selectedPeriod: ProgressPeriod = ProgressPeriod.SIX_MONTHS,
-    val chartPoints: List<Pair<Long, Float>> = emptyList(),
+    // График: только PR-точки (максимальный вес, не падает назад)
+    val chartPoints: List<ChartPoint> = emptyList(),
+    // Мин/макс для оси Y с шагом 5 кг
+    val yAxisMin: Float = 0f,
+    val yAxisMax: Float = 100f,
+    val yAxisLabels: List<Float> = emptyList(),
 )
 
 data class PrWithExercise(
@@ -58,7 +67,7 @@ data class PrWithExercise(
 class ProgressViewModel @Inject constructor(
     private val progressRepo: ProgressRepository,
     private val exerciseRepo: ExerciseRepository,
-    private val rankRepo: RankRepository, 
+    private val rankRepo: RankRepository,
     observeLevel: ObserveCurrentLevelUseCase,
 ) : ViewModel() {
 
@@ -66,6 +75,7 @@ class ProgressViewModel @Inject constructor(
     private val selectedPeriodFlow     = MutableStateFlow(ProgressPeriod.SIX_MONTHS)
     private val searchQueryFlow        = MutableStateFlow("")
 
+    // История подходов для выбранного упражнения + периода
     private val historyFlow = combine(
         selectedExerciseIdFlow,
         selectedPeriodFlow,
@@ -78,56 +88,74 @@ class ProgressViewModel @Inject constructor(
         progressRepo.observeExerciseHistorySince(id, since)
     }
 
+    // PR-записи для выбранного упражнения
+    private val exercisePrsFlow = selectedExerciseIdFlow.flatMapLatest { exId ->
+        progressRepo.observeAllPersonalRecords()
+            .flatMapLatest { allPrs ->
+                kotlinx.coroutines.flow.flowOf(allPrs.filter { it.exerciseId == exId })
+            }
+    }
+
     private val searchResultsFlow = searchQueryFlow
         .debounce(150)
         .flatMapLatest { q -> exerciseRepo.search(q) }
 
-val state: StateFlow<ProgressUiState> = combine(
-    combine(
-        rankRepo.observeRankState(),
-        observeLevel(),
-        progressRepo.observeTotalSessions(),
-        progressRepo.observeAllPersonalRecords(),
-    ) { rankState, level, sessions, prs -> 
-        listOf(rankState, level, sessions, prs) // промежуточный объект
-    },
-    exerciseRepo.observeAll(),
-    combine(
-        selectedExerciseIdFlow,
-        selectedPeriodFlow,
-        searchQueryFlow,
-        searchResultsFlow,
-        historyFlow,
-    ) { exId, period, query, searchResults, history ->
-        PartialState(exId, period, query, searchResults, history)
-    },
-) { meta, allExercises, partial ->
-    @Suppress("UNCHECKED_CAST")
-    val rankState = meta[0] as RankState
-    val level = meta[1] as StrengthLevel
-    val sessions = meta[2] as Int
-    val prs = meta[3] as List<PersonalRecordEntity>
-    
-    val byId = allExercises.associateBy { it.id }
-    val prItems = prs.mapNotNull { pr ->
-        byId[pr.exerciseId]?.let { ex -> PrWithExercise(pr, ex.name) }
-    }
-    val chartPoints = buildRunningMaxChart(partial.history)
+    val state: StateFlow<ProgressUiState> = combine(
+        combine(
+            rankRepo.observeRankState(),
+            observeLevel(),
+            progressRepo.observeTotalSessions(),
+        ) { rankState, level, sessions ->
+            Triple(rankState, level, sessions)
+        },
+        exerciseRepo.observeAll(),
+        combine(
+            selectedExerciseIdFlow,
+            selectedPeriodFlow,
+            searchQueryFlow,
+            searchResultsFlow,
+            historyFlow,
+        ) { exId, period, query, searchResults, history ->
+            PartialState(exId, period, query, searchResults, history)
+        },
+        exercisePrsFlow,
+    ) { meta, allExercises, partial, exercisePrs ->
+        val rankState = meta.first
+        val level     = meta.second
+        val sessions  = meta.third
 
-    ProgressUiState(
-        rankState            = rankState,
-        level                = level,
-        totalSessions        = sessions,
-        personalRecords      = prItems,
-        allExercises         = allExercises,
-        filteredExercises    = if (partial.searchQuery.isBlank()) allExercises else partial.searchResults,
-        searchQuery          = partial.searchQuery,
-        selectedExerciseId   = partial.selectedExerciseId,
-        selectedExerciseName = byId[partial.selectedExerciseId]?.name ?: "",
-        selectedPeriod       = partial.selectedPeriod,
-        chartPoints          = chartPoints,
-    )
-}.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ProgressUiState())
+        val byId = allExercises.associateBy { it.id }
+
+        // Только PR для выбранного упражнения — топ-3 по estimated1Rm
+        val prItems = exercisePrs
+            .mapNotNull { pr -> byId[pr.exerciseId]?.let { ex -> PrWithExercise(pr, ex.name) } }
+            .sortedByDescending { it.pr.estimated1Rm }
+            .take(3)
+
+        // Строим «нарастающий максимум» — точки только когда устанавливается новый PR по весу
+        val chartPoints = buildPrChart(partial.history)
+
+        // Вычисляем оси Y с шагом 5 кг
+        val (yMin, yMax, yLabels) = computeYAxis(chartPoints)
+
+        ProgressUiState(
+            rankState            = rankState,
+            level                = level,
+            totalSessions        = sessions,
+            winStreak            = 7, // TODO: реальный подсчёт streak
+            personalRecords      = prItems,
+            allExercises         = allExercises,
+            filteredExercises    = if (partial.searchQuery.isBlank()) allExercises else partial.searchResults,
+            searchQuery          = partial.searchQuery,
+            selectedExerciseId   = partial.selectedExerciseId,
+            selectedExerciseName = byId[partial.selectedExerciseId]?.name ?: "",
+            selectedPeriod       = partial.selectedPeriod,
+            chartPoints          = chartPoints,
+            yAxisMin             = yMin,
+            yAxisMax             = yMax,
+            yAxisLabels          = yLabels,
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ProgressUiState())
 
     fun selectExercise(id: Long) {
         selectedExerciseIdFlow.value = id
@@ -142,17 +170,46 @@ val state: StateFlow<ProgressUiState> = combine(
         searchQueryFlow.value = query
     }
 
-    private fun buildRunningMaxChart(sets: List<SetLogEntity>): List<Pair<Long, Float>> {
+    /**
+     * Строит список точек, где каждая точка — новый максимальный вес за всё время.
+     * Линия графика никогда не идёт вниз.
+     */
+    private fun buildPrChart(sets: List<SetLogEntity>): List<ChartPoint> {
         if (sets.isEmpty()) return emptyList()
-        val result = mutableListOf<Pair<Long, Float>>()
+        val result = mutableListOf<ChartPoint>()
         var runningMax = 0.0
         for (set in sets) {
             if (set.weightKg > runningMax) {
                 runningMax = set.weightKg
-                result.add(set.performedAt to runningMax.toFloat())
+                result.add(ChartPoint(set.performedAt, runningMax.toFloat()))
             }
         }
         return result
+    }
+
+    /**
+     * Вычисляет параметры оси Y: шаг 5 кг, красиво округлённые границы.
+     */
+    private fun computeYAxis(points: List<ChartPoint>): Triple<Float, Float, List<Float>> {
+        if (points.isEmpty()) return Triple(0f, 100f, (0..100 step 20).map { it.toFloat() })
+
+        val minKg = points.minOf { it.weightKg }
+        val maxKg = points.maxOf { it.weightKg }
+        val step = 5f
+        val padding = 10f // отступ сверху и снизу
+
+        val yMin = (Math.floor(((minKg - padding) / step).toDouble()) * step).toFloat()
+            .coerceAtLeast(0f)
+        val yMax = (Math.ceil(((maxKg + padding) / step).toDouble()) * step).toFloat()
+
+        val labels = mutableListOf<Float>()
+        var cur = yMin
+        while (cur <= yMax) {
+            labels.add(cur)
+            cur += step
+        }
+
+        return Triple(yMin, yMax, labels)
     }
 
     private data class PartialState(
