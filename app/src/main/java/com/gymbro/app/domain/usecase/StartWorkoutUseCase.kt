@@ -1,7 +1,7 @@
-package com.gymbro.app.domain.usecase
+package com.obsession.app.domain.usecase
 
-import com.gymbro.app.data.repository.ProgressRepository
-import com.gymbro.app.data.repository.WorkoutRepository
+import com.obsession.app.data.repository.ProgressRepository
+import com.obsession.app.data.repository.WorkoutRepository
 import kotlinx.coroutines.flow.firstOrNull
 import javax.inject.Inject
 

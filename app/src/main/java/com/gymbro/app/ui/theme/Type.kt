@@ -1,4 +1,4 @@
-package com.gymbro.app.ui.theme
+package com.obsession.app.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
@@ -12,7 +12,7 @@ import androidx.compose.ui.unit.sp
 private val DisplayFont  = FontFamily.SansSerif
 private val BodyFont     = FontFamily.SansSerif
 
-val GymBroTypography = Typography(
+val ObsessionTypography = Typography(
 
     // ── Display — hero numbers, level badges ─────────────────────
     displayLarge = TextStyle(

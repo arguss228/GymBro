@@ -1,4 +1,4 @@
-package com.gymbro.app.ui.onboarding
+package com.obsession.app.ui.onboarding
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*

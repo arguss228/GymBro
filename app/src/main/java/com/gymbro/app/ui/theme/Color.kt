@@ -1,4 +1,4 @@
-package com.gymbro.app.ui.theme
+package com.obsession.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

@@ -8,11 +8,11 @@ plugins {
 }
 
 android {
-    namespace = "com.gymbro.app"
+    namespace = "com.obsession.app"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.gymbro.app"
+        applicationId = "com.obsession.app"
         minSdk = 26
         targetSdk = 34
         versionCode = 1

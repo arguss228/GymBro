@@ -1,7 +1,7 @@
-package com.gymbro.app.data.repository
+package com.obsession.app.data.repository
 
-import com.gymbro.app.data.local.dao.ExerciseDao
-import com.gymbro.app.data.local.entity.ExerciseEntity
+import com.obsession.app.data.local.dao.ExerciseDao
+import com.obsession.app.data.local.entity.ExerciseEntity
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton

@@ -1,4 +1,4 @@
-package com.gymbro.app.ui.navigation
+package com.obsession.app.ui.navigation
 
 sealed class Screen(val route: String) {
 

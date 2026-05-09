@@ -1,4 +1,4 @@
-package com.gymbro.app.ui.plans
+package com.obsession.app.ui.plans
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

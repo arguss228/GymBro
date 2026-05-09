@@ -1,4 +1,4 @@
-package com.gymbro.app.ui.theme
+package com.obsession.app.ui.theme
 
 import android.app.Activity
 import android.os.Build
@@ -126,7 +126,7 @@ private val LightColorScheme = lightColorScheme(
  *                      По умолчанию включено; при невозможности — fallback на кастомную схему.
  */
 @Composable
-fun GymBroTheme(
+fun ObsessionTheme(
     themeMode: ThemeMode = ThemeMode.SYSTEM,
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit,
@@ -168,7 +168,7 @@ fun GymBroTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography  = GymBroTypography,
+        typography  = ObsessionTypography,
         content     = content,
     )
 }

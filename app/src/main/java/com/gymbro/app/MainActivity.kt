@@ -1,4 +1,4 @@
-package com.gymbro.app
+package com.obsession.app
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -7,9 +7,9 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.gymbro.app.ui.navigation.GymBroNavHost
-import com.gymbro.app.ui.theme.GymBroTheme
-import com.gymbro.app.ui.theme.ThemeViewModel
+import com.obsession.app.ui.navigation.ObsessionNavHost
+import com.obsession.app.ui.theme.ObsessionTheme
+import com.obsession.app.ui.theme.ThemeViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -22,8 +22,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val themeMode by themeViewModel.themeMode.collectAsStateWithLifecycle()
-            GymBroTheme(themeMode = themeMode) {
-                GymBroNavHost()
+            ObsessionTheme(themeMode = themeMode) {
+                ObsessionNavHost()
             }
         }
     }

@@ -1,4 +1,4 @@
-package com.gymbro.app.ui.splash
+package com.obsession.app.ui.splash
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons

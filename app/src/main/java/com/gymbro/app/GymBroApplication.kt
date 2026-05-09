@@ -1,13 +1,13 @@
-package com.gymbro.app
+package com.obsession.app
 
 import android.app.Application
-import com.gymbro.app.data.seed.SeedRunner
+import com.obsession.app.data.seed.SeedRunner
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import javax.inject.Inject
 
 @HiltAndroidApp
-class GymBroApplication : Application() {
+class ObsessionApplication : Application() {
 
     @Inject lateinit var seedRunner: SeedRunner
 

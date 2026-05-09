@@ -1,4 +1,4 @@
-package com.gymbro.app.ui.exercises
+package com.obsession.app.ui.exercises
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement

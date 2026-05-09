@@ -1,4 +1,4 @@
-package com.gymbro.app.domain.model
+package com.obsession.app.domain.model
 
 /**
  * Три базовых упражнения, на основе которых считается уровень силы.

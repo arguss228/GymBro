@@ -1,4 +1,4 @@
-package com.gymbro.app.data.local.dao
+package com.obsession.app.data.local.dao
 
 import androidx.room.Dao
 import androidx.room.Insert

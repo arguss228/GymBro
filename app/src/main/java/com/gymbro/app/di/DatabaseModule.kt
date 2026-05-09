@@ -1,16 +1,16 @@
-package com.gymbro.app.di
+package com.obsession.app.di
 
 import android.content.Context
 import androidx.room.Room
-import com.gymbro.app.data.local.GymBroDatabase
-import com.gymbro.app.data.local.dao.ExerciseDao
-import com.gymbro.app.data.local.dao.ExerciseMaxDao
-import com.gymbro.app.data.local.dao.OneRmDao
-import com.gymbro.app.data.local.dao.PersonalRecordDao
-import com.gymbro.app.data.local.dao.SetLogDao
-import com.gymbro.app.data.local.dao.TrainingDayDao
-import com.gymbro.app.data.local.dao.UserProfileDao
-import com.gymbro.app.data.local.dao.WorkoutPlanDao
+import com.obsession.app.data.local.ObsessionDatabase
+import com.obsession.app.data.local.dao.ExerciseDao
+import com.obsession.app.data.local.dao.ExerciseMaxDao
+import com.obsession.app.data.local.dao.OneRmDao
+import com.obsession.app.data.local.dao.PersonalRecordDao
+import com.obsession.app.data.local.dao.SetLogDao
+import com.obsession.app.data.local.dao.TrainingDayDao
+import com.obsession.app.data.local.dao.UserProfileDao
+import com.obsession.app.data.local.dao.WorkoutPlanDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -27,19 +27,19 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideDatabase(@ApplicationContext context: Context): GymBroDatabase =
-        Room.databaseBuilder(context, GymBroDatabase::class.java, GymBroDatabase.DATABASE_NAME)
+    fun provideDatabase(@ApplicationContext context: Context): ObsessionDatabase =
+        Room.databaseBuilder(context, ObsessionDatabase::class.java, ObsessionDatabase.DATABASE_NAME)
             .fallbackToDestructiveMigration()
             .build()
 
-    @Provides fun provideExerciseDao(db: GymBroDatabase): ExerciseDao             = db.exerciseDao()
-    @Provides fun provideWorkoutPlanDao(db: GymBroDatabase): WorkoutPlanDao       = db.workoutPlanDao()
-    @Provides fun provideTrainingDayDao(db: GymBroDatabase): TrainingDayDao       = db.trainingDayDao()
-    @Provides fun provideSetLogDao(db: GymBroDatabase): SetLogDao                 = db.setLogDao()
-    @Provides fun providePersonalRecordDao(db: GymBroDatabase): PersonalRecordDao = db.personalRecordDao()
-    @Provides fun provideUserProfileDao(db: GymBroDatabase): UserProfileDao       = db.userProfileDao()
-    @Provides fun provideOneRmDao(db: GymBroDatabase): OneRmDao                   = db.oneRmDao()
-    @Provides fun provideExerciseMaxDao(db: GymBroDatabase): ExerciseMaxDao       = db.exerciseMaxDao()
+    @Provides fun provideExerciseDao(db: ObsessionDatabase): ExerciseDao             = db.exerciseDao()
+    @Provides fun provideWorkoutPlanDao(db: ObsessionDatabase): WorkoutPlanDao       = db.workoutPlanDao()
+    @Provides fun provideTrainingDayDao(db: ObsessionDatabase): TrainingDayDao       = db.trainingDayDao()
+    @Provides fun provideSetLogDao(db: ObsessionDatabase): SetLogDao                 = db.setLogDao()
+    @Provides fun providePersonalRecordDao(db: ObsessionDatabase): PersonalRecordDao = db.personalRecordDao()
+    @Provides fun provideUserProfileDao(db: ObsessionDatabase): UserProfileDao       = db.userProfileDao()
+    @Provides fun provideOneRmDao(db: ObsessionDatabase): OneRmDao                   = db.oneRmDao()
+    @Provides fun provideExerciseMaxDao(db: ObsessionDatabase): ExerciseMaxDao       = db.exerciseMaxDao()
 
     @Provides
     @Singleton

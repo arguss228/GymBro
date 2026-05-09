@@ -1,4 +1,4 @@
-package com.gymbro.app.ui.workout
+package com.obsession.app.ui.workout
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically

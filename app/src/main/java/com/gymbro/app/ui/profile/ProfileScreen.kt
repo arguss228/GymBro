@@ -1,4 +1,4 @@
-package com.gymbro.app.ui.profile
+package com.obsession.app.ui.profile
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*

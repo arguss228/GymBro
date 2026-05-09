@@ -1,4 +1,4 @@
-package com.gymbro.app.ui.plandetail
+package com.obsession.app.ui.plandetail
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize

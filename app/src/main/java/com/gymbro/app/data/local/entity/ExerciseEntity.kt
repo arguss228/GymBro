@@ -1,4 +1,4 @@
-package com.gymbro.app.data.local.entity
+package com.obsession.app.data.local.entity
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity

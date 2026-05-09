@@ -1,9 +1,9 @@
-package com.gymbro.app.data.local.converter
+package com.obsession.app.data.local.converter
 
 import androidx.room.TypeConverter
-import com.gymbro.app.data.local.entity.ExerciseCategory
-import com.gymbro.app.data.local.entity.ExerciseEquipment
-import com.gymbro.app.data.local.entity.PrType
+import com.obsession.app.data.local.entity.ExerciseCategory
+import com.obsession.app.data.local.entity.ExerciseEquipment
+import com.obsession.app.data.local.entity.PrType
 
 class Converters {
 

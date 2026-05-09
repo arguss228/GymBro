@@ -1,26 +1,26 @@
-package com.gymbro.app.data.local
+package com.obsession.app.data.local
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
-import com.gymbro.app.data.local.converter.Converters
-import com.gymbro.app.data.local.dao.ExerciseDao
-import com.gymbro.app.data.local.dao.ExerciseMaxDao
-import com.gymbro.app.data.local.dao.OneRmDao
-import com.gymbro.app.data.local.dao.PersonalRecordDao
-import com.gymbro.app.data.local.dao.SetLogDao
-import com.gymbro.app.data.local.dao.TrainingDayDao
-import com.gymbro.app.data.local.dao.UserProfileDao
-import com.gymbro.app.data.local.dao.WorkoutPlanDao
-import com.gymbro.app.data.local.entity.ExerciseEntity
-import com.gymbro.app.data.local.entity.ExerciseMaxEntity
-import com.gymbro.app.data.local.entity.OneRmEntity
-import com.gymbro.app.data.local.entity.PersonalRecordEntity
-import com.gymbro.app.data.local.entity.SetLogEntity
-import com.gymbro.app.data.local.entity.TrainingDayEntity
-import com.gymbro.app.data.local.entity.TrainingDayExerciseEntity
-import com.gymbro.app.data.local.entity.UserProfileEntity
-import com.gymbro.app.data.local.entity.WorkoutPlanEntity
+import com.obsession.app.data.local.converter.Converters
+import com.obsession.app.data.local.dao.ExerciseDao
+import com.obsession.app.data.local.dao.ExerciseMaxDao
+import com.obsession.app.data.local.dao.OneRmDao
+import com.obsession.app.data.local.dao.PersonalRecordDao
+import com.obsession.app.data.local.dao.SetLogDao
+import com.obsession.app.data.local.dao.TrainingDayDao
+import com.obsession.app.data.local.dao.UserProfileDao
+import com.obsession.app.data.local.dao.WorkoutPlanDao
+import com.obsession.app.data.local.entity.ExerciseEntity
+import com.obsession.app.data.local.entity.ExerciseMaxEntity
+import com.obsession.app.data.local.entity.OneRmEntity
+import com.obsession.app.data.local.entity.PersonalRecordEntity
+import com.obsession.app.data.local.entity.SetLogEntity
+import com.obsession.app.data.local.entity.TrainingDayEntity
+import com.obsession.app.data.local.entity.TrainingDayExerciseEntity
+import com.obsession.app.data.local.entity.UserProfileEntity
+import com.obsession.app.data.local.entity.WorkoutPlanEntity
 
 @Database(
     entities = [
@@ -38,7 +38,7 @@ import com.gymbro.app.data.local.entity.WorkoutPlanEntity
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
-abstract class GymBroDatabase : RoomDatabase() {
+abstract class ObsessionDatabase : RoomDatabase() {
 
     abstract fun exerciseDao(): ExerciseDao
     abstract fun workoutPlanDao(): WorkoutPlanDao
@@ -50,6 +50,6 @@ abstract class GymBroDatabase : RoomDatabase() {
     abstract fun exerciseMaxDao(): ExerciseMaxDao
 
     companion object {
-        const val DATABASE_NAME = "gymbro.db"
+        const val DATABASE_NAME = "obsession.db"
     }
 }

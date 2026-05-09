@@ -1,4 +1,4 @@
-package com.gymbro.app.ui.planeditor
+package com.obsession.app.ui.planeditor
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
