@@ -5,19 +5,18 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Analytics
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.LocalFireDepartment
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShowChart
 import androidx.compose.material.icons.outlined.Analytics
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.FitnessCenter
 import androidx.compose.material.icons.outlined.LocalFireDepartment
-import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.ShowChart
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -42,6 +41,7 @@ data class BottomNavItem(
     val contentDescription: String,
 )
 
+// Порядок: Тренировки, Прогресс, Главная (центр), Анализ тела, Трекер привычек
 val bottomNavItems = listOf(
     BottomNavItem(
         route = Screen.Workouts.route,
@@ -68,19 +68,11 @@ val bottomNavItems = listOf(
         contentDescription = "Анализ тела",
     ),
     BottomNavItem(
-        route = Screen.Profile.route,
-        selectedIcon = Icons.Filled.Person,
-        unselectedIcon = Icons.Outlined.Person,
-        contentDescription = "Профиль",
+        route = Screen.HabitTracker.route,
+        selectedIcon = Icons.Filled.CheckCircle,
+        unselectedIcon = Icons.Outlined.CheckCircle,
+        contentDescription = "Трекер привычек",
     ),
-)
-
-// Routes where bottom bar should be hidden
-val bottomBarHiddenRoutes = setOf(
-    Screen.Splash.route,
-    Screen.Enter1Rm.route,
-    Screen.WorkoutSession.route.substringBefore("{"),
-    "workout/",
 )
 
 @Composable
@@ -102,7 +94,6 @@ fun GymBroBottomNavBar(navController: NavController) {
                 onClick = {
                     if (!selected) {
                         navController.navigate(item.route) {
-                            // Pop up to the start destination to avoid backstack accumulation
                             popUpTo(Screen.Home.route) {
                                 saveState = true
                             }
@@ -113,7 +104,6 @@ fun GymBroBottomNavBar(navController: NavController) {
                 },
                 icon = {
                     if (isCenter) {
-                        // Special center button
                         CenterNavIcon(
                             selected = selected,
                             icon = if (selected) item.selectedIcon else item.unselectedIcon,
@@ -127,7 +117,7 @@ fun GymBroBottomNavBar(navController: NavController) {
                         )
                     }
                 },
-                label = null, // No text labels
+                label = null,
                 alwaysShowLabel = false,
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = if (isCenter) Color.Unspecified
@@ -175,6 +165,7 @@ private fun CenterNavIcon(
 fun shouldShowBottomBar(route: String?): Boolean {
     if (route == null) return false
     if (route == Screen.Splash.route) return false
+    if (route == Screen.OnboardingProfile.route) return false
     if (route == Screen.Enter1Rm.route) return false
     if (route.startsWith("workout/")) return false
     return true

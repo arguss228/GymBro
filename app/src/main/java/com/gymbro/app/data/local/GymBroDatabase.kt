@@ -34,7 +34,7 @@ import com.gymbro.app.data.local.entity.WorkoutPlanEntity
         OneRmEntity::class,
         ExerciseMaxEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)

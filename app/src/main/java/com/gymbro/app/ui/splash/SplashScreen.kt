@@ -1,19 +1,10 @@
 package com.gymbro.app.ui.splash
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -22,6 +13,7 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun SplashScreen(
+    onNeedsProfile: () -> Unit,
     onNeeds1Rm: () -> Unit,
     onReady: () -> Unit,
     viewModel: SplashViewModel = hiltViewModel(),
@@ -29,9 +21,10 @@ fun SplashScreen(
     LaunchedEffect(Unit) {
         delay(500)
         when {
+            !viewModel.isProfileCompleted() -> onNeedsProfile()
             !viewModel.isOnboardingCompleted() -> onNeeds1Rm()
-            viewModel.needs1RmEntry()          -> onNeeds1Rm()
-            else                               -> onReady()
+            viewModel.needs1RmEntry() -> onNeeds1Rm()
+            else -> onReady()
         }
     }
 

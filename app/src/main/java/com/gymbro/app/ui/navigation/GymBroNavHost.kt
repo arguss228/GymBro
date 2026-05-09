@@ -25,7 +25,9 @@ import com.gymbro.app.ui.bodyrank.ExerciseRanksScreen
 import com.gymbro.app.ui.bodytab.BodyAnalysisTabScreen
 import com.gymbro.app.ui.exercises.ExerciseDetailScreen
 import com.gymbro.app.ui.exercises.ExercisesScreen
+import com.gymbro.app.ui.habits.HabitTrackerScreen
 import com.gymbro.app.ui.home.HomeScreen
+import com.gymbro.app.ui.onboarding.OnboardingProfileScreen
 import com.gymbro.app.ui.plandetail.TrainingPlanDetailScreen
 import com.gymbro.app.ui.planeditor.PlanEditorScreen
 import com.gymbro.app.ui.plans.PlansScreen
@@ -46,7 +48,6 @@ fun GymBroNavHost() {
     val navBackStackEntry by nav.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    // Slide transitions for detail screens
     val slideIn: AnimatedContentTransitionScope<*>.() -> EnterTransition = {
         slideInHorizontally(tween(NAV_MS)) { it / 3 } + fadeIn(tween(NAV_MS))
     }
@@ -59,14 +60,8 @@ fun GymBroNavHost() {
     val popExit: AnimatedContentTransitionScope<*>.() -> ExitTransition = {
         slideOutHorizontally(tween(NAV_MS)) { it / 3 } + fadeOut(tween(NAV_MS))
     }
-
-    // Bottom-tab cross-fade (no slide)
-    val tabEnter: AnimatedContentTransitionScope<*>.() -> EnterTransition = {
-        fadeIn(tween(200))
-    }
-    val tabExit: AnimatedContentTransitionScope<*>.() -> ExitTransition = {
-        fadeOut(tween(150))
-    }
+    val tabEnter: AnimatedContentTransitionScope<*>.() -> EnterTransition = { fadeIn(tween(200)) }
+    val tabExit: AnimatedContentTransitionScope<*>.() -> ExitTransition = { fadeOut(tween(150)) }
 
     val showBottomBar = shouldShowBottomBar(currentRoute)
 
@@ -88,9 +83,14 @@ fun GymBroNavHost() {
             popExitTransition = popExit,
         ) {
 
-            // ── Splash / Onboarding ──────────────────────────────────
+            // ── Splash ───────────────────────────────────────────────
             composable(Screen.Splash.route) {
                 SplashScreen(
+                    onNeedsProfile = {
+                        nav.navigate(Screen.OnboardingProfile.route) {
+                            popUpTo(Screen.Splash.route) { inclusive = true }
+                        }
+                    },
                     onNeeds1Rm = {
                         nav.navigate(Screen.Enter1Rm.route) {
                             popUpTo(Screen.Splash.route) { inclusive = true }
@@ -104,6 +104,18 @@ fun GymBroNavHost() {
                 )
             }
 
+            // ── Onboarding: Profile ──────────────────────────────────
+            composable(Screen.OnboardingProfile.route) {
+                OnboardingProfileScreen(
+                    onDone = {
+                        nav.navigate(Screen.Enter1Rm.route) {
+                            popUpTo(Screen.OnboardingProfile.route) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
+            // ── Onboarding: 1RM ─────────────────────────────────────
             composable(Screen.Enter1Rm.route) {
                 Enter1RmScreen(
                     onDone = {
@@ -114,7 +126,7 @@ fun GymBroNavHost() {
                 )
             }
 
-            // ── Bottom Nav: Home ─────────────────────────────────────
+            // ── Bottom Nav: Home (центр) ──────────────────────────────
             composable(
                 route = Screen.Home.route,
                 enterTransition = tabEnter,
@@ -128,6 +140,7 @@ fun GymBroNavHost() {
                     },
                     onOpenSettings = { nav.navigate(Screen.Settings.route) },
                     onOpenRanks = { nav.navigate(Screen.StrengthRanks.route) },
+                    onOpenProfile = { nav.navigate(Screen.Profile.route) },
                 )
             }
 
@@ -156,7 +169,7 @@ fun GymBroNavHost() {
                 popExitTransition = tabExit,
             ) {
                 ProgressScreen(
-                    onBack = { /* No back in tab */ },
+                    onBack = { },
                     isEmbedded = true,
                 )
             }
@@ -172,15 +185,28 @@ fun GymBroNavHost() {
                 BodyAnalysisTabScreen()
             }
 
-            // ── Bottom Nav: Profile ──────────────────────────────────
+            // ── Bottom Nav: Habit Tracker (новая вкладка) ────────────
             composable(
-                route = Screen.Profile.route,
+                route = Screen.HabitTracker.route,
                 enterTransition = tabEnter,
                 exitTransition = tabExit,
                 popEnterTransition = tabEnter,
                 popExitTransition = tabExit,
             ) {
-                ProfileScreen()
+                HabitTrackerScreen()
+            }
+
+            // ── Profile (открывается из главной, НЕ в bottom nav) ───
+            composable(
+                route = Screen.Profile.route,
+                enterTransition = slideIn,
+                exitTransition = slideOut,
+                popEnterTransition = popEnter,
+                popExitTransition = popExit,
+            ) {
+                ProfileScreen(
+                    onOpenSettings = { nav.navigate(Screen.Settings.route) },
+                )
             }
 
             // ── Detail screens ────────────────────────────────────────
@@ -206,7 +232,6 @@ fun GymBroNavHost() {
                 )
             }
 
-            // ── Plan Detail ──────────────────────────────────────────
             composable(
                 Screen.PlanDetail.route,
                 arguments = listOf(navArgument(Screen.PlanDetail.ARG_PLAN_ID) {
