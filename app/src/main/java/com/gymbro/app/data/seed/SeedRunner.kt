@@ -1,7 +1,7 @@
-package com.gymbro.app.data.seed
+package com.obsession.app.data.seed
 
-import com.gymbro.app.data.local.GymBroDatabase
-import com.gymbro.app.data.local.entity.UserProfileEntity
+import com.obsession.app.data.local.ObsessionDatabase
+import com.obsession.app.data.local.entity.UserProfileEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -14,7 +14,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class SeedRunner @Inject constructor(
-    private val db: GymBroDatabase,
+    private val db: ObsessionDatabase,
 ) {
     fun runIfNeeded(scope: CoroutineScope) {
         scope.launch(Dispatchers.IO) {

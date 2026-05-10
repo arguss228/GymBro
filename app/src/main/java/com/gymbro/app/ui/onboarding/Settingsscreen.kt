@@ -1,4 +1,4 @@
-package com.gymbro.app.ui.settings
+package com.obsession.app.ui.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -44,8 +44,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.gymbro.app.ui.theme.ThemeMode
-import com.gymbro.app.ui.theme.ThemeViewModel
+import com.obsession.app.ui.theme.ThemeMode
+import com.obsession.app.ui.theme.ThemeViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -157,7 +157,7 @@ fun SettingsScreen(
                         }
                         Column {
                             Text(
-                                "GymBro",
+                                "Obsession",
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = MaterialTheme.colorScheme.onSurface,

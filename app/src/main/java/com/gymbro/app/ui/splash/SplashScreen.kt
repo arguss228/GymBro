@@ -40,7 +40,7 @@ fun SplashScreen(
                 tint = MaterialTheme.colorScheme.primary,
             )
             Text(
-                "GymBro",
+                "Obsession",
                 style = MaterialTheme.typography.displayMedium,
                 color = MaterialTheme.colorScheme.onBackground,
             )

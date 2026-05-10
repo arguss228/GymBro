@@ -1,10 +1,10 @@
-package com.gymbro.app.data.repository
+package com.obsession.app.data.repository
 
-import com.gymbro.app.data.local.entity.ExerciseEntity
-import com.gymbro.app.domain.model.ExerciseDetail
-import com.gymbro.app.domain.model.Mistake
-import com.gymbro.app.domain.model.RepRecommendation
-import com.gymbro.app.domain.model.TechniqueStep
+import com.obsession.app.data.local.entity.ExerciseEntity
+import com.obsession.app.domain.model.ExerciseDetail
+import com.obsession.app.domain.model.Mistake
+import com.obsession.app.domain.model.RepRecommendation
+import com.obsession.app.domain.model.TechniqueStep
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -418,7 +418,7 @@ class ExerciseTechniqueRepository @Inject constructor() {
         category = entity.category,
         equipment = entity.equipment,
         primaryMuscle = entity.primaryMuscle,
-        overview = entity.description ?: "Упражнение из базы GymBro. Подробные рекомендации по технике скоро будут добавлены.",
+        overview = entity.description ?: "Упражнение из базы Obsession. Подробные рекомендации по технике скоро будут добавлены.",
         techniqueSteps = listOf(
             TechniqueStep("Техника выполнения",
                 "Выполняйте упражнение в полной амплитуде с контролируемым темпом. Следите за нейтральным положением позвоночника. При необходимости проконсультируйтесь с тренером."),
