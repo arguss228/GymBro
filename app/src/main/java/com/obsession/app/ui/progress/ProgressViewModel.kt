@@ -17,10 +17,6 @@ import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
 
-// ════════════════════════════════════════════════════════════════
-//  UI State
-// ════════════════════════════════════════════════════════════════
-
 data class ChartPoint(val timestampMs: Long, val weightKg: Float)
 data class PrWithExercise(val pr: PersonalRecordEntity, val exercise: ExerciseEntity?)
 
@@ -35,10 +31,8 @@ enum class ProgressPeriod(val label: String, val days: Int) {
 data class ProgressUiState(
     val rankState: RankState = RankState(),
     val totalSessions: Int = 0,
-    // Win Streak
     val winStreak: Int = 0,
-    val completedWorkoutDates: Set<String> = emptySet(), // "yyyy-MM-dd"
-    // Chart / search
+    val completedWorkoutDates: Set<String> = emptySet(),
     val selectedExerciseId: Long = -1L,
     val selectedExerciseName: String = "Выберите упражнение",
     val searchQuery: String = "",
@@ -50,10 +44,6 @@ data class ProgressUiState(
     val yAxisLabels: List<Float> = emptyList(),
     val personalRecords: List<PrWithExercise> = emptyList(),
 )
-
-// ════════════════════════════════════════════════════════════════
-//  ViewModel
-// ════════════════════════════════════════════════════════════════
 
 @HiltViewModel
 class ProgressViewModel @Inject constructor(
@@ -74,8 +64,6 @@ class ProgressViewModel @Inject constructor(
         observePrForSelected()
     }
 
-    // ── Rank ─────────────────────────────────────────────────────
-
     private fun loadRank() {
         viewModelScope.launch {
             rankRepo.observeRankState().collect { rankState ->
@@ -83,8 +71,6 @@ class ProgressViewModel @Inject constructor(
             }
         }
     }
-
-    // ── Sessions → streak + calendar dates ───────────────────────
 
     private fun loadSessions() {
         viewModelScope.launch {
@@ -94,10 +80,6 @@ class ProgressViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Считает текущую серию начиная с сегодня / вчера.
-     * Серия сбрасывается если разрыв между двумя тренировками > 6 дней.
-     */
     private fun calculateStreak(sortedDates: Set<String>): Int {
         if (sortedDates.isEmpty()) return 0
 
@@ -106,7 +88,6 @@ class ProgressViewModel @Inject constructor(
         cal.add(Calendar.DAY_OF_YEAR, -1)
         val yesterdayKey = dayKeyFormat.format(cal.time)
 
-        // Проверяем, была ли тренировка сегодня или вчера (иначе серия не активна)
         val lastDate = sortedDates.last()
         if (lastDate != todayKey && lastDate != yesterdayKey) return 0
 
@@ -115,10 +96,8 @@ class ProgressViewModel @Inject constructor(
 
         for (i in sortedList.indices.reversed().drop(1)) {
             val current = parseDate(sortedList[i + 1]) ?: break
-            val prev    = parseDate(sortedList[i])    ?: break
+            val prev = parseDate(sortedList[i]) ?: break
             val diffDays = ((current.time - prev.time) / (1000L * 60 * 60 * 24)).toInt()
-
-            // Разрыв > 6 дней → серия сбрасывается
             if (diffDays > 6) break
             streak++
         }
@@ -126,15 +105,14 @@ class ProgressViewModel @Inject constructor(
         return streak
     }
 
-    private fun parseDate(key: String): Date? = runCatching { dayKeyFormat.parse(key) }.getOrNull()
-
-    // ── Exercises ────────────────────────────────────────────────
+    private fun parseDate(key: String): Date? =
+        runCatching { dayKeyFormat.parse(key) }.getOrNull()
 
     private fun loadExercises() {
         viewModelScope.launch {
             exerciseRepo.observeAll().collect { exercises ->
                 val filtered = if (_state.value.searchQuery.isBlank()) exercises
-                               else exercises.filter { it.name.contains(_state.value.searchQuery, ignoreCase = true) }
+                else exercises.filter { it.name.contains(_state.value.searchQuery, ignoreCase = true) }
                 _state.value = _state.value.copy(filteredExercises = filtered)
             }
         }
@@ -164,8 +142,6 @@ class ProgressViewModel @Inject constructor(
         _state.value = _state.value.copy(selectedPeriod = period)
     }
 
-    // ── PR chart ─────────────────────────────────────────────────
-
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun observePrForSelected() {
         viewModelScope.launch {
@@ -174,11 +150,11 @@ class ProgressViewModel @Inject constructor(
                 _state.map { it.selectedPeriod }.distinctUntilChanged(),
             ) { id, period -> Pair(id, period) }
                 .flatMapLatest { (id, period) ->
-                    if (id < 0L) flowOf<List<PersonalRecordEntity>>(emptyList())
+                    if (id < 0L) flowOf(emptyList())
                     else progressRepo.observePrsForExercise(id)
                         .map { prs ->
                             val cutoff = if (period.days == Int.MAX_VALUE) 0L
-                                         else System.currentTimeMillis() - period.days * 24L * 3600_000L
+                            else System.currentTimeMillis() - period.days * 24L * 3600_000L
                             prs.filter { it.achievedAt >= cutoff }
                                 .sortedBy { it.achievedAt }
                         }

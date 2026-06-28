@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -37,10 +38,6 @@ import com.obsession.app.domain.model.Mistake
 import com.obsession.app.domain.model.RepRecommendation
 import com.obsession.app.domain.model.TechniqueStep
 
-// ════════════════════════════════════════════════════════════════
-//  Root screen
-// ════════════════════════════════════════════════════════════════
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExerciseDetailScreen(
@@ -57,7 +54,6 @@ fun ExerciseDetailScreen(
         }
     }
 
-    // Диалог: выбор плана
     if (state.showPlanPicker) {
         PlanPickerDialog(
             plans = state.availablePlans,
@@ -66,7 +62,6 @@ fun ExerciseDetailScreen(
         )
     }
 
-    // Диалог: выбор дня после выбора плана
     if (state.showDayPicker && state.selectedPlan != null) {
         DayPickerDialog(
             plan = state.selectedPlan!!,
@@ -94,11 +89,8 @@ fun ExerciseDetailScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
                     }
                 },
-                // ИСПРАВЛЕНИЕ: кнопка «Добавить в тренировку» перенесена в TopAppBar
                 actions = {
-                    IconButton(
-                        onClick = viewModel::onAddToWorkoutClick,
-                    ) {
+                    IconButton(onClick = viewModel::onAddToWorkoutClick) {
                         Icon(
                             Icons.Default.Add,
                             contentDescription = "Добавить в тренировку",
@@ -134,10 +126,6 @@ fun ExerciseDetailScreen(
     }
 }
 
-// ════════════════════════════════════════════════════════════════
-//  Plan picker dialog
-// ════════════════════════════════════════════════════════════════
-
 @Composable
 private fun PlanPickerDialog(
     plans: List<WorkoutPlanEntity>,
@@ -158,7 +146,6 @@ private fun PlanPickerDialog(
                 )
 
                 if (plans.isEmpty()) {
-                    // Нет планов
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -203,13 +190,23 @@ private fun PlanPickerDialog(
                                         .background(MaterialTheme.colorScheme.primary.copy(0.15f)),
                                     contentAlignment = Alignment.Center,
                                 ) {
-                                    Icon(Icons.Default.FitnessCenter, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                                    Icon(
+                                        Icons.Default.FitnessCenter,
+                                        null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp),
+                                    )
                                 }
                                 Column(Modifier.weight(1f)) {
                                     Text(plan.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                                     Text("${plan.daysPerWeek} дн/нед", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
-                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+                                Icon(
+                                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                    null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(18.dp),
+                                )
                             }
                         }
                     }
@@ -222,14 +219,6 @@ private fun PlanPickerDialog(
         }
     }
 }
-
-// Нужен импорт
-private val Icons.AutoMirrored.Filled.KeyboardArrowRight: ImageVector
-    get() = androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-
-// ════════════════════════════════════════════════════════════════
-//  Day picker dialog
-// ════════════════════════════════════════════════════════════════
 
 @Composable
 private fun DayPickerDialog(
@@ -278,9 +267,19 @@ private fun DayPickerDialog(
                                     .background(MaterialTheme.colorScheme.primary.copy(0.15f)),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                Text("${index + 1}", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                Text(
+                                    "${index + 1}",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
                             }
-                            Text(day.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                            Text(
+                                day.name,
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.weight(1f),
+                            )
                         }
                     }
                 }
@@ -292,10 +291,6 @@ private fun DayPickerDialog(
         }
     }
 }
-
-// ════════════════════════════════════════════════════════════════
-//  Main content (без изменений логики, только убрана нижняя кнопка)
-// ════════════════════════════════════════════════════════════════
 
 @Composable
 private fun ExerciseDetailContent(
@@ -340,7 +335,12 @@ private fun ExerciseDetailContent(
 
         if (detail.commonMistakes.isNotEmpty()) {
             item {
-                SectionHeader(title = "Распространённые ошибки", icon = Icons.Default.ErrorOutline, accentColor = MaterialTheme.colorScheme.error, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+                SectionHeader(
+                    title = "Распространённые ошибки",
+                    icon = Icons.Default.ErrorOutline,
+                    accentColor = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
             }
             itemsIndexed(detail.commonMistakes) { _, mistake ->
                 MistakeCard(mistake = mistake, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
@@ -349,7 +349,12 @@ private fun ExerciseDetailContent(
 
         if (detail.tips.isNotEmpty()) {
             item {
-                SectionHeader(title = "Советы и дыхание", icon = Icons.Default.Lightbulb, accentColor = MaterialTheme.colorScheme.tertiary, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+                SectionHeader(
+                    title = "Советы и дыхание",
+                    icon = Icons.Default.Lightbulb,
+                    accentColor = MaterialTheme.colorScheme.tertiary,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
             }
             itemsIndexed(detail.tips) { _, tip ->
                 TipCard(tip = tip, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
@@ -358,18 +363,28 @@ private fun ExerciseDetailContent(
 
         if (detail.variations.isNotEmpty()) {
             item {
-                SectionHeader(title = "Варианты и прогрессии", icon = Icons.Default.Shuffle, accentColor = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+                SectionHeader(
+                    title = "Варианты и прогрессии",
+                    icon = Icons.Default.Shuffle,
+                    accentColor = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
                 VariationsCard(variations = detail.variations, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
             }
         }
 
-        // Нижняя кнопка — оставляем как дополнительный способ добавить
         item {
             Spacer(Modifier.height(16.dp))
             Button(
                 onClick = onAddToWorkout,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(56.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .height(56.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                ),
                 shape = RoundedCornerShape(16.dp),
             ) {
                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(20.dp))
@@ -380,22 +395,35 @@ private fun ExerciseDetailContent(
     }
 }
 
-// ── Hero banner ──────────────────────────────────────────────────
-
 @Composable
 private fun HeroBanner(detail: ExerciseDetail) {
     val gradient = Brush.verticalGradient(
-        colors = listOf(categoryColor(detail.category).copy(alpha = 0.85f), categoryColor(detail.category).copy(alpha = 0.45f), MaterialTheme.colorScheme.background)
+        colors = listOf(
+            categoryColor(detail.category).copy(alpha = 0.85f),
+            categoryColor(detail.category).copy(alpha = 0.45f),
+            MaterialTheme.colorScheme.background,
+        )
     )
     Box(modifier = Modifier.fillMaxWidth().height(260.dp)) {
         Box(modifier = Modifier.fillMaxWidth().height(220.dp).background(gradient))
         Box(
-            modifier = Modifier.size(120.dp).align(Alignment.TopCenter).padding(top = 24.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.15f)).border(2.dp, Color.White.copy(alpha = 0.3f), CircleShape),
+            modifier = Modifier
+                .size(120.dp)
+                .align(Alignment.TopCenter)
+                .padding(top = 24.dp)
+                .clip(CircleShape)
+                .background(Color.White.copy(alpha = 0.15f))
+                .border(2.dp, Color.White.copy(alpha = 0.3f), CircleShape),
             contentAlignment = Alignment.Center,
         ) {
             Icon(categoryIcon(detail.category), null, tint = Color.White, modifier = Modifier.size(56.dp))
         }
-        Column(modifier = Modifier.align(Alignment.BottomStart).padding(horizontal = 16.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 InfoChip(label = equipmentLabel(detail.equipment), color = MaterialTheme.colorScheme.primary)
                 InfoChip(label = categoryLabel(detail.category), color = categoryColor(detail.category))
@@ -403,7 +431,10 @@ private fun HeroBanner(detail: ExerciseDetail) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 InfoChip(label = "▶ ${detail.primaryMuscle}", color = MaterialTheme.colorScheme.secondary)
                 if (detail.secondaryMuscles.isNotEmpty()) {
-                    InfoChip(label = "+ ${detail.secondaryMuscles.take(2).joinToString(", ")}", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                    InfoChip(
+                        label = "+ ${detail.secondaryMuscles.take(2).joinToString(", ")}",
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    )
                 }
             }
         }
@@ -412,16 +443,35 @@ private fun HeroBanner(detail: ExerciseDetail) {
 
 @Composable
 private fun InfoChip(label: String, color: Color) {
-    Box(modifier = Modifier.clip(RoundedCornerShape(50)).background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)).padding(horizontal = 10.dp, vertical = 4.dp)) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
+            .padding(horizontal = 10.dp, vertical = 4.dp),
+    ) {
         Text(label, style = MaterialTheme.typography.labelMedium, color = color, fontWeight = FontWeight.SemiBold)
     }
 }
 
 @Composable
 private fun VideoPlaceholder(modifier: Modifier = Modifier) {
-    Card(modifier = modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
-        Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Box(modifier = Modifier.size(48.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)), contentAlignment = Alignment.Center) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center,
+            ) {
                 Icon(Icons.Default.PlayCircle, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
             }
             Column {
@@ -433,9 +483,24 @@ private fun VideoPlaceholder(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun SectionHeader(title: String, icon: ImageVector, modifier: Modifier = Modifier, accentColor: Color = MaterialTheme.colorScheme.primary) {
-    Row(modifier = modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Box(modifier = Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).background(accentColor.copy(alpha = 0.15f)), contentAlignment = Alignment.Center) {
+private fun SectionHeader(
+    title: String,
+    icon: ImageVector,
+    modifier: Modifier = Modifier,
+    accentColor: Color = MaterialTheme.colorScheme.primary,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(accentColor.copy(alpha = 0.15f)),
+            contentAlignment = Alignment.Center,
+        ) {
             Icon(icon, null, tint = accentColor, modifier = Modifier.size(20.dp))
         }
         Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
@@ -445,14 +510,32 @@ private fun SectionHeader(title: String, icon: ImageVector, modifier: Modifier =
 @Composable
 private fun TechniqueStepCard(step: TechniqueStep, stepNumber: Int, modifier: Modifier = Modifier) {
     var expanded by remember { mutableStateOf(true) }
-    Card(modifier = modifier.fillMaxWidth().animateContentSize().clickable { expanded = !expanded }, shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .animateContentSize()
+            .clickable { expanded = !expanded },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+    ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Box(modifier = Modifier.size(32.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary), contentAlignment = Alignment.Center) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary),
+                    contentAlignment = Alignment.Center,
+                ) {
                     Text("$stepNumber", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onPrimary)
                 }
                 Text(step.phase, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                Icon(if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                Icon(
+                    if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp),
+                )
             }
             if (expanded) {
                 Spacer(Modifier.height(10.dp))
@@ -467,7 +550,11 @@ private val goalColors = listOf(Color(0xFF7C4DFF), Color(0xFFFF6B35), Color(0xFF
 @Composable
 private fun RepRecommendationCard(rec: RepRecommendation, index: Int, modifier: Modifier = Modifier) {
     val accentColor = goalColors.getOrElse(index) { Color(0xFF9E9E9E) }
-    Card(modifier = modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+    ) {
         Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(accentColor))
@@ -480,18 +567,32 @@ private fun RepRecommendationCard(rec: RepRecommendation, index: Int, modifier: 
             }
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text("Интенсивность:", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Box(modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(accentColor.copy(alpha = 0.15f)).padding(horizontal = 8.dp, vertical = 2.dp)) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(accentColor.copy(alpha = 0.15f))
+                        .padding(horizontal = 8.dp, vertical = 2.dp),
+                ) {
                     Text(rec.intensity, style = MaterialTheme.typography.labelMedium, color = accentColor, fontWeight = FontWeight.SemiBold)
                 }
             }
-            if (rec.notes.isNotBlank()) Text(rec.notes, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 18.sp)
+            if (rec.notes.isNotBlank()) {
+                Text(rec.notes, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 18.sp)
+            }
         }
     }
 }
 
 @Composable
 private fun MetricBox(label: String, value: String, icon: ImageVector, color: Color, modifier: Modifier = Modifier) {
-    Column(modifier = modifier.clip(RoundedCornerShape(12.dp)).background(color.copy(alpha = 0.10f)).padding(horizontal = 8.dp, vertical = 10.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(color.copy(alpha = 0.10f))
+            .padding(horizontal = 8.dp, vertical = 10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
         Icon(icon, null, tint = color, modifier = Modifier.size(18.dp))
         Text(value, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
         Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center, fontSize = 10.sp)
@@ -500,9 +601,19 @@ private fun MetricBox(label: String, value: String, icon: ImageVector, color: Co
 
 @Composable
 private fun MistakeCard(mistake: Mistake, modifier: Modifier = Modifier) {
-    Card(modifier = modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.25f))) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.25f)),
+    ) {
         Row(modifier = Modifier.padding(14.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Box(modifier = Modifier.size(36.dp).clip(CircleShape).background(MaterialTheme.colorScheme.error.copy(alpha = 0.15f)), contentAlignment = Alignment.Center) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.error.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center,
+            ) {
                 Icon(Icons.Default.ErrorOutline, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
             }
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -515,8 +626,16 @@ private fun MistakeCard(mistake: Mistake, modifier: Modifier = Modifier) {
 
 @Composable
 private fun TipCard(tip: String, modifier: Modifier = Modifier) {
-    Card(modifier = modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f))) {
-        Row(modifier = Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.Top) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)),
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.Top,
+        ) {
             Icon(Icons.Default.Lightbulb, null, tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(18.dp).padding(top = 2.dp))
             Text(tip, style = MaterialTheme.typography.bodySmall, lineHeight = 18.sp, modifier = Modifier.weight(1f))
         }
@@ -525,7 +644,11 @@ private fun TipCard(tip: String, modifier: Modifier = Modifier) {
 
 @Composable
 private fun VariationsCard(variations: List<String>, modifier: Modifier = Modifier) {
-    Card(modifier = modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f))) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)),
+    ) {
         Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             variations.forEach { variation ->
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -539,42 +662,46 @@ private fun VariationsCard(variations: List<String>, modifier: Modifier = Modifi
 
 @Composable
 private fun SectionCard(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
-    Card(modifier = modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+    ) {
         Box(modifier = Modifier.padding(16.dp)) { content() }
     }
 }
 
 @Composable
 private fun categoryColor(category: ExerciseCategory): Color = when (category) {
-    ExerciseCategory.CHEST     -> Color(0xFFFF6B35)
-    ExerciseCategory.BACK      -> Color(0xFF2196F3)
-    ExerciseCategory.LEGS      -> Color(0xFF4CAF50)
+    ExerciseCategory.CHEST -> Color(0xFFFF6B35)
+    ExerciseCategory.BACK -> Color(0xFF2196F3)
+    ExerciseCategory.LEGS -> Color(0xFF4CAF50)
     ExerciseCategory.SHOULDERS -> Color(0xFFFFC107)
-    ExerciseCategory.ARMS      -> Color(0xFF7C4DFF)
-    ExerciseCategory.CORE      -> Color(0xFF00BCD4)
+    ExerciseCategory.ARMS -> Color(0xFF7C4DFF)
+    ExerciseCategory.CORE -> Color(0xFF00BCD4)
     ExerciseCategory.FULL_BODY -> Color(0xFFE91E63)
-    ExerciseCategory.OTHER     -> MaterialTheme.colorScheme.primary
+    ExerciseCategory.OTHER -> MaterialTheme.colorScheme.primary
 }
 
 private fun categoryIcon(category: ExerciseCategory): ImageVector = Icons.Default.FitnessCenter
 
 private fun categoryLabel(category: ExerciseCategory): String = when (category) {
-    ExerciseCategory.CHEST     -> "Грудь"
-    ExerciseCategory.BACK      -> "Спина"
-    ExerciseCategory.LEGS      -> "Ноги"
+    ExerciseCategory.CHEST -> "Грудь"
+    ExerciseCategory.BACK -> "Спина"
+    ExerciseCategory.LEGS -> "Ноги"
     ExerciseCategory.SHOULDERS -> "Плечи"
-    ExerciseCategory.ARMS      -> "Руки"
-    ExerciseCategory.CORE      -> "Кор"
+    ExerciseCategory.ARMS -> "Руки"
+    ExerciseCategory.CORE -> "Кор"
     ExerciseCategory.FULL_BODY -> "Всё тело"
-    ExerciseCategory.OTHER     -> "Другое"
+    ExerciseCategory.OTHER -> "Другое"
 }
 
 private fun equipmentLabel(equipment: ExerciseEquipment): String = when (equipment) {
-    ExerciseEquipment.BARBELL    -> "Штанга"
-    ExerciseEquipment.DUMBBELL   -> "Гантели"
-    ExerciseEquipment.MACHINE    -> "Тренажёр"
-    ExerciseEquipment.CABLE      -> "Блок"
+    ExerciseEquipment.BARBELL -> "Штанга"
+    ExerciseEquipment.DUMBBELL -> "Гантели"
+    ExerciseEquipment.MACHINE -> "Тренажёр"
+    ExerciseEquipment.CABLE -> "Блок"
     ExerciseEquipment.BODYWEIGHT -> "Без инвентаря"
     ExerciseEquipment.KETTLEBELL -> "Гиря"
-    ExerciseEquipment.OTHER      -> "Другое"
+    ExerciseEquipment.OTHER -> "Другое"
 }

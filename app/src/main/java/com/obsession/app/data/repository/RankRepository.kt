@@ -2,6 +2,7 @@ package com.obsession.app.data.repository
 
 import com.obsession.app.data.local.dao.OneRmDao
 import com.obsession.app.data.local.dao.UserProfileDao
+import com.obsession.app.data.local.entity.OneRmEntity
 import com.obsession.app.data.local.entity.UserProfileEntity
 import com.obsession.app.domain.model.StrengthRank
 import com.obsession.app.domain.model.StrengthRanks
@@ -11,16 +12,16 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 data class RankState(
-    val bench: Double            = 0.0,
-    val squat: Double            = 0.0,
-    val deadlift: Double         = 0.0,
+    val bench: Double = 0.0,
+    val squat: Double = 0.0,
+    val deadlift: Double = 0.0,
     val currentRank: StrengthRank = StrengthRanks.all.first(),
-    val nextRank: StrengthRank?   = StrengthRanks.all.getOrNull(1),
-    val progress: Float           = 0f,
-    val kgToBench: Double         = 0.0,
-    val kgToSquat: Double         = 0.0,
-    val kgToDeadlift: Double      = 0.0,
-    val hasData: Boolean          = false,
+    val nextRank: StrengthRank? = StrengthRanks.all.getOrNull(1),
+    val progress: Float = 0f,
+    val kgToBench: Double = 0.0,
+    val kgToSquat: Double = 0.0,
+    val kgToDeadlift: Double = 0.0,
+    val hasData: Boolean = false,
 )
 
 @Singleton
@@ -40,17 +41,13 @@ class RankRepository @Inject constructor(
         oneRmDao.upsert(OneRmEntity(benchKg = bench, squatKg = squat, deadliftKg = deadlift))
     }
 
-    /**
-     * Обновляет 1RM по каждому лифту — берём максимум из текущего и нового.
-     * Возвращает новый ранг если он повысился, иначе null.
-     */
     suspend fun updateIfBetter(bench: Double?, squat: Double?, deadlift: Double?): StrengthRank? {
         val current = oneRmDao.get() ?: OneRmEntity()
         val prevRank = StrengthRanks.currentRankFor(
             current.benchKg, current.squatKg, current.deadliftKg
         )
-        val newBench    = maxOf(current.benchKg,    bench    ?: 0.0)
-        val newSquat    = maxOf(current.squatKg,    squat    ?: 0.0)
+        val newBench = maxOf(current.benchKg, bench ?: 0.0)
+        val newSquat = maxOf(current.squatKg, squat ?: 0.0)
         val newDeadlift = maxOf(current.deadliftKg, deadlift ?: 0.0)
 
         oneRmDao.upsert(OneRmEntity(benchKg = newBench, squatKg = newSquat, deadliftKg = newDeadlift))
@@ -68,8 +65,7 @@ class RankRepository @Inject constructor(
         profileDao.get()?.onboardingCompleted == true
 
     suspend fun completeOnboarding() {
-        val profile = profileDao.get()
-            ?: UserProfileEntity()
+        val profile = profileDao.get() ?: UserProfileEntity()
         profileDao.upsert(profile.copy(onboardingCompleted = true))
     }
 
@@ -78,11 +74,11 @@ class RankRepository @Inject constructor(
         val nxt = StrengthRanks.nextRank(cur)
         val (kb, ks, kd) = StrengthRanks.kgToNext(b, s, d)
         return RankState(
-            bench        = b, squat = s, deadlift = d,
-            currentRank  = cur, nextRank = nxt,
-            progress     = StrengthRanks.progressToNext(b, s, d),
-            kgToBench    = kb, kgToSquat = ks, kgToDeadlift = kd,
-            hasData      = true,
+            bench = b, squat = s, deadlift = d,
+            currentRank = cur, nextRank = nxt,
+            progress = StrengthRanks.progressToNext(b, s, d),
+            kgToBench = kb, kgToSquat = ks, kgToDeadlift = kd,
+            hasData = true,
         )
     }
 }

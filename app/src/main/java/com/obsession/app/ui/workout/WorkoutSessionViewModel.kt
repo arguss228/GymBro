@@ -8,7 +8,6 @@ import com.obsession.app.data.local.entity.SetLogEntity
 import com.obsession.app.data.local.entity.TrainingDayEntity
 import com.obsession.app.data.local.entity.WorkoutPlanEntity
 import com.obsession.app.data.repository.ExerciseRepository
-import com.obsession.app.data.repository.GoalRepositoryImpl
 import com.obsession.app.data.repository.ProgressRepository
 import com.obsession.app.data.repository.RankRepository
 import com.obsession.app.data.repository.WorkoutRepository
@@ -17,6 +16,18 @@ import com.obsession.app.domain.model.BigThreeLift
 import com.obsession.app.domain.model.StrengthRank
 import com.obsession.app.domain.usecase.LogSetUseCase
 import com.obsession.app.ui.navigation.Screen
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 data class WorkoutExerciseUi(
     val planEntry: com.obsession.app.data.local.entity.TrainingDayExerciseEntity,
@@ -34,7 +45,6 @@ data class WorkoutSessionUiState(
     val isLoading: Boolean = true,
     val recentPrMessage: String? = null,
     val rankUpEvent: StrengthRank? = null,
-    // ИСПРАВЛЕНИЕ: таймер тренировки
     val workoutElapsedSeconds: Long = 0L,
 )
 
@@ -49,14 +59,14 @@ class WorkoutSessionViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
-    private val sessionId: Long = savedStateHandle.get<Long>(Screen.WorkoutSession.ARG_SESSION_ID) ?: 0L
+    private val sessionId: Long =
+        savedStateHandle.get<Long>(Screen.WorkoutSession.ARG_SESSION_ID) ?: 0L
 
-    private val selectedDayIdFlow  = MutableStateFlow<Long?>(null)
-    private val restFlow           = MutableStateFlow(0)
-    private val messageFlow        = MutableStateFlow<String?>(null)
-    private val rankUpFlow         = MutableStateFlow<StrengthRank?>(null)
-    // ИСПРАВЛЕНИЕ: таймер тренировки
-    private val elapsedSecsFlow    = MutableStateFlow(0L)
+    private val selectedDayIdFlow = MutableStateFlow<Long?>(null)
+    private val restFlow = MutableStateFlow(0)
+    private val messageFlow = MutableStateFlow<String?>(null)
+    private val rankUpFlow = MutableStateFlow<StrengthRank?>(null)
+    private val elapsedSecsFlow = MutableStateFlow(0L)
 
     private var restJob: Job? = null
     private var timerJob: Job? = null
@@ -64,7 +74,6 @@ class WorkoutSessionViewModel @Inject constructor(
     private val _state = MutableStateFlow(WorkoutSessionUiState(sessionId = sessionId))
     val state: StateFlow<WorkoutSessionUiState> = _state.asStateFlow()
 
-    // Храним накопленный тоннаж за сессию
     private var sessionTonnageKg = 0.0
 
     init {
@@ -84,8 +93,7 @@ class WorkoutSessionViewModel @Inject constructor(
                 selectedDayIdFlow,
                 restFlow,
                 elapsedSecsFlow,
-                combine(messageFlow, rankUpFlow) { msg, rankUp -> msg to rankUp },
-            ) { entries, logs, dayId, rest, elapsed, (message, rankUp) ->
+            ) { entries, logs, dayId, rest, elapsed ->
                 val byId = entries
                     .map { it.exerciseId }
                     .distinct()
@@ -95,32 +103,41 @@ class WorkoutSessionViewModel @Inject constructor(
                 val exerciseItems = entries.mapNotNull { entry ->
                     val ex = byId[entry.exerciseId] ?: return@mapNotNull null
                     WorkoutExerciseUi(
-                        planEntry  = entry,
-                        exercise   = ex,
+                        planEntry = entry,
+                        exercise = ex,
                         loggedSets = logs.filter { it.exerciseId == ex.id },
                     )
                 }
 
                 WorkoutSessionUiState(
-                    sessionId              = sessionId,
-                    activePlan             = plan,
-                    days                   = days,
-                    selectedDayId          = dayId,
-                    exercises              = exerciseItems,
-                    restSecondsRemaining   = rest,
-                    recentPrMessage        = message,
-                    rankUpEvent            = rankUp,
-                    isLoading              = false,
-                    workoutElapsedSeconds  = elapsed,
+                    sessionId = sessionId,
+                    activePlan = plan,
+                    days = days,
+                    selectedDayId = dayId,
+                    exercises = exerciseItems,
+                    restSecondsRemaining = rest,
+                    recentPrMessage = messageFlow.value,
+                    rankUpEvent = rankUpFlow.value,
+                    isLoading = false,
+                    workoutElapsedSeconds = elapsed,
                 )
             }.collect { _state.value = it }
         }
 
-        // ИСПРАВЛЕНИЕ: запускаем таймер тренировки сразу
+        // Collect message and rankUp separately to avoid 6-arg combine
+        viewModelScope.launch {
+            messageFlow.collect { msg ->
+                _state.value = _state.value.copy(recentPrMessage = msg)
+            }
+        }
+        viewModelScope.launch {
+            rankUpFlow.collect { rankUp ->
+                _state.value = _state.value.copy(rankUpEvent = rankUp)
+            }
+        }
+
         startWorkoutTimer()
     }
-
-    // ── Таймер тренировки ─────────────────────────────────────────
 
     private fun startWorkoutTimer() {
         timerJob?.cancel()
@@ -136,36 +153,32 @@ class WorkoutSessionViewModel @Inject constructor(
         selectedDayIdFlow.value = dayId
     }
 
-    // ── Логирование подхода ───────────────────────────────────────
-
     fun logSet(exerciseId: Long, weightKg: Double, reps: Int, restSeconds: Int) {
         if (weightKg <= 0.0 || reps <= 0) return
 
         viewModelScope.launch {
-            val existing  = progressRepo.observeSession(sessionId).firstOrNull() ?: emptyList()
+            val existing = progressRepo.observeSession(sessionId).firstOrNull() ?: emptyList()
             val setNumber = existing.count { it.exerciseId == exerciseId } + 1
 
             val res = logSetUseCase(
                 LogSetUseCase.Params(
-                    sessionId  = sessionId,
+                    sessionId = sessionId,
                     exerciseId = exerciseId,
-                    setNumber  = setNumber,
-                    weightKg   = weightKg,
-                    reps       = reps,
+                    setNumber = setNumber,
+                    weightKg = weightKg,
+                    reps = reps,
                 )
             )
 
-            // ИСПРАВЛЕНИЕ: накапливаем тоннаж
             sessionTonnageKg += weightKg * reps
 
-            // Автообновление 1RM для Big Three при одном повторении
             if (reps == 1) {
                 val lift = BigThreeLift.fromSeedId(exerciseId)
                 if (lift != null) {
                     val newRank = rankRepo.updateIfBetter(
-                        bench    = if (lift == BigThreeLift.BENCH_PRESS) weightKg else null,
-                        squat    = if (lift == BigThreeLift.BACK_SQUAT)  weightKg else null,
-                        deadlift = if (lift == BigThreeLift.DEADLIFT)    weightKg else null,
+                        bench = if (lift == BigThreeLift.BENCH_PRESS) weightKg else null,
+                        squat = if (lift == BigThreeLift.BACK_SQUAT) weightKg else null,
+                        deadlift = if (lift == BigThreeLift.DEADLIFT) weightKg else null,
                     )
                     if (newRank != null) {
                         rankUpFlow.value = newRank
@@ -174,7 +187,6 @@ class WorkoutSessionViewModel @Inject constructor(
                 }
             }
 
-            // ИСПРАВЛЕНИЕ: проверка цели по силе при каждом подходе
             viewModelScope.launch {
                 goalRepo.checkAndUpdateGoals()
             }
@@ -188,22 +200,11 @@ class WorkoutSessionViewModel @Inject constructor(
         }
     }
 
-    // ── Завершение тренировки ─────────────────────────────────────
-
-    /**
-     * ИСПРАВЛЕНИЕ: при завершении тренировки:
-     * 1. Останавливаем таймер и сохраняем время в SharedPreferences (или БД)
-     * 2. Добавляем тоннаж к общей статистике (через SetLog — уже накоплено автоматически)
-     * 3. Проверяем цели
-     *
-     * Вызывается из WorkoutSessionScreen при нажатии «Завершить».
-     */
     fun finishWorkout() {
         timerJob?.cancel()
         restJob?.cancel()
 
         viewModelScope.launch {
-            // Проверяем все цели (Win Streak + Сила)
             goalRepo.checkAndUpdateGoals()
         }
     }
@@ -226,7 +227,9 @@ class WorkoutSessionViewModel @Inject constructor(
         restFlow.value = 0
     }
 
-    fun dismissRankUp() { rankUpFlow.value = null }
+    fun dismissRankUp() {
+        rankUpFlow.value = null
+    }
 
     override fun onCleared() {
         super.onCleared()

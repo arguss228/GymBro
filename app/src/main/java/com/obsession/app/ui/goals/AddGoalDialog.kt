@@ -33,10 +33,6 @@ import com.obsession.app.domain.goals.*
 import java.text.SimpleDateFormat
 import java.util.*
 
-// ════════════════════════════════════════════════════════════════
-//  Диалог выбора типа цели → настройка → подтверждение
-// ════════════════════════════════════════════════════════════════
-
 @Composable
 fun AddGoalDialog(
     exercises: List<ExerciseEntity>,
@@ -64,23 +60,21 @@ fun AddGoalDialog(
                 GoalType.STRENGTH -> StrengthGoalForm(
                     exercises = exercises,
                     onConfirm = { onConfirm(it); onDismiss() },
-                    onBack    = { selectedType = null },
+                    onBack = { selectedType = null },
                 )
                 GoalType.BODY_WEIGHT -> BodyWeightGoalForm(
                     currentWeight = currentUserWeight,
                     onConfirm = { onConfirm(it); onDismiss() },
-                    onBack    = { selectedType = null },
+                    onBack = { selectedType = null },
                 )
                 GoalType.WIN_STREAK -> WinStreakGoalForm(
                     onConfirm = { onConfirm(it); onDismiss() },
-                    onBack    = { selectedType = null },
+                    onBack = { selectedType = null },
                 )
             }
         }
     }
 }
-
-// ── Выбор типа цели ───────────────────────────────────────────────
 
 @Composable
 private fun GoalTypePicker(onSelect: (GoalType) -> Unit, onDismiss: () -> Unit) {
@@ -95,12 +89,13 @@ private fun GoalTypePicker(onSelect: (GoalType) -> Unit, onDismiss: () -> Unit) 
         )
 
         val types = listOf(
-            Triple(GoalType.STRENGTH,    "🏋️", "Цель по силе",          "Новый максимум в упражнении"),
-            Triple(GoalType.BODY_WEIGHT, "⚖️", "Цель по весу тела",     "Достичь желаемого веса"),
-            Triple(GoalType.WIN_STREAK,  "🔥", "Win Streak",            "Серия последовательных тренировок"),
+            Triple(GoalType.STRENGTH, "🏋️", "Цель по силе" to "Новый максимум в упражнении"),
+            Triple(GoalType.BODY_WEIGHT, "⚖️", "Цель по весу тела" to "Достичь желаемого веса"),
+            Triple(GoalType.WIN_STREAK, "🔥", "Win Streak" to "Серия последовательных тренировок"),
         )
 
-        types.forEach { (type, icon, title, desc) ->
+        types.forEach { (type, icon, titleDesc) ->
+            val (title, desc) = titleDesc
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -126,8 +121,6 @@ private fun GoalTypePicker(onSelect: (GoalType) -> Unit, onDismiss: () -> Unit) 
     }
 }
 
-// ── Форма: цель по силе ───────────────────────────────────────────
-
 @Composable
 private fun StrengthGoalForm(
     exercises: List<ExerciseEntity>,
@@ -142,10 +135,13 @@ private fun StrengthGoalForm(
     var selectedDateMillis by remember { mutableStateOf<Long?>(null) }
 
     val filtered = remember(searchQuery, exercises) {
-        if (searchQuery.isBlank()) exercises else exercises.filter { it.name.contains(searchQuery, ignoreCase = true) }
+        if (searchQuery.isBlank()) exercises
+        else exercises.filter { it.name.contains(searchQuery, ignoreCase = true) }
     }
 
-    val canConfirm = selectedExercise != null && targetWeight.toDoubleOrNull() != null && targetReps.toIntOrNull() != null
+    val canConfirm = selectedExercise != null &&
+            targetWeight.toDoubleOrNull() != null &&
+            targetReps.toIntOrNull() != null
 
     Column(
         modifier = Modifier
@@ -153,7 +149,6 @@ private fun StrengthGoalForm(
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        // Навигация
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             IconButton(onClick = onBack, modifier = Modifier.size(32.dp)) {
                 Icon(Icons.Default.ArrowBack, null, modifier = Modifier.size(20.dp))
@@ -161,19 +156,28 @@ private fun StrengthGoalForm(
             Text("Цель по силе 🏋️", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold)
         }
 
-        // Выбор упражнения
         if (selectedExercise == null) {
             OutlinedTextField(
-                value = searchQuery, onValueChange = { searchQuery = it },
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
                 label = { Text("Поиск упражнения") },
                 leadingIcon = { Icon(Icons.Default.Search, null) },
-                modifier = Modifier.fillMaxWidth(), singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
                 shape = RoundedCornerShape(14.dp),
             )
-            Card(modifier = Modifier.fillMaxWidth().heightIn(max = 240.dp), shape = RoundedCornerShape(14.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
+            Card(
+                modifier = Modifier.fillMaxWidth().heightIn(max = 240.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            ) {
                 LazyColumn {
                     items(filtered.take(8)) { ex ->
-                        Row(modifier = Modifier.fillMaxWidth().clickable { selectedExercise = ex }.padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().clickable { selectedExercise = ex }.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
                             Icon(Icons.Default.FitnessCenter, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                             Column(Modifier.weight(1f)) {
                                 Text(ex.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
@@ -185,8 +189,15 @@ private fun StrengthGoalForm(
                 }
             }
         } else {
-            // Выбранное упражнение
-            Row(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.primaryContainer.copy(0.3f)).padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(MaterialTheme.colorScheme.primaryContainer.copy(0.3f))
+                    .padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
                 Icon(Icons.Default.FitnessCenter, null, tint = MaterialTheme.colorScheme.primary)
                 Text(selectedExercise!!.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                 IconButton(onClick = { selectedExercise = null; searchQuery = "" }, modifier = Modifier.size(28.dp)) {
@@ -195,35 +206,45 @@ private fun StrengthGoalForm(
             }
         }
 
-        // Целевой вес и повторения
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             OutlinedTextField(
-                value = targetWeight, onValueChange = { targetWeight = it },
-                label = { Text("Вес, кг") }, suffix = { Text("кг") },
+                value = targetWeight,
+                onValueChange = { targetWeight = it },
+                label = { Text("Вес, кг") },
+                suffix = { Text("кг") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                modifier = Modifier.weight(1f), singleLine = true, shape = RoundedCornerShape(14.dp),
+                modifier = Modifier.weight(1f),
+                singleLine = true,
+                shape = RoundedCornerShape(14.dp),
             )
             OutlinedTextField(
-                value = targetReps, onValueChange = { targetReps = it },
+                value = targetReps,
+                onValueChange = { targetReps = it },
                 label = { Text("Повторения") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.weight(1f), singleLine = true, shape = RoundedCornerShape(14.dp),
+                modifier = Modifier.weight(1f),
+                singleLine = true,
+                shape = RoundedCornerShape(14.dp),
             )
         }
 
-        // Дата достижения
-        DatePickerRow(selectedDateMillis = selectedDateMillis, onPickDate = { showDatePicker = true }, onClearDate = { selectedDateMillis = null })
+        DatePickerRow(
+            selectedDateMillis = selectedDateMillis,
+            onPickDate = { showDatePicker = true },
+            onClearDate = { selectedDateMillis = null },
+        )
 
-        // Кнопка установить цель
         Button(
             onClick = {
-                onConfirm(GoalParams.Strength(
-                    exerciseId    = selectedExercise!!.id,
-                    exerciseName  = selectedExercise!!.name,
-                    targetWeightKg = targetWeight.toDouble(),
-                    targetReps    = targetReps.toIntOrNull() ?: 1,
-                    deadlineMillis = selectedDateMillis,
-                ))
+                onConfirm(
+                    GoalParams.Strength(
+                        exerciseId = selectedExercise!!.id,
+                        exerciseName = selectedExercise!!.name,
+                        targetWeightKg = targetWeight.toDouble(),
+                        targetReps = targetReps.toIntOrNull() ?: 1,
+                        deadlineMillis = selectedDateMillis,
+                    )
+                )
             },
             enabled = canConfirm,
             modifier = Modifier.fillMaxWidth().height(52.dp),
@@ -243,8 +264,6 @@ private fun StrengthGoalForm(
     }
 }
 
-// ── Форма: цель по весу тела ──────────────────────────────────────
-
 @Composable
 private fun BodyWeightGoalForm(
     currentWeight: Double,
@@ -259,29 +278,43 @@ private fun BodyWeightGoalForm(
     val difficulty = weightDifficulty(currentWeight, targetKg)
     val canConfirm = targetWeight.toDoubleOrNull() != null
 
-    Column(modifier = Modifier.padding(24.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    Column(
+        modifier = Modifier.padding(24.dp).verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            IconButton(onClick = onBack, modifier = Modifier.size(32.dp)) { Icon(Icons.Default.ArrowBack, null, modifier = Modifier.size(20.dp)) }
+            IconButton(onClick = onBack, modifier = Modifier.size(32.dp)) {
+                Icon(Icons.Default.ArrowBack, null, modifier = Modifier.size(20.dp))
+            }
             Text("Цель по весу ⚖️", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold)
         }
 
-        // Текущий вес
-        Row(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.surfaceVariant).padding(14.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(14.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .padding(14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Text("Текущий вес", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text("${currentWeight.toInt()} кг", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         }
 
-        // Целевой вес — вертикальный слайдер (реализован через Slider)
         Text("Целевой вес", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
 
         OutlinedTextField(
-            value = targetWeight, onValueChange = { targetWeight = it },
-            label = { Text("Целевой вес, кг") }, suffix = { Text("кг") },
+            value = targetWeight,
+            onValueChange = { targetWeight = it },
+            label = { Text("Целевой вес, кг") },
+            suffix = { Text("кг") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(14.dp),
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            shape = RoundedCornerShape(14.dp),
         )
 
-        // Слайдер (40–200 кг диапазон)
         val sliderRange = 40f..200f
         var sliderPos by remember { mutableStateOf(targetKg.toFloat().coerceIn(sliderRange)) }
         LaunchedEffect(sliderPos) { targetWeight = sliderPos.toInt().toString() }
@@ -293,19 +326,23 @@ private fun BodyWeightGoalForm(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        // Табло сложности
         DifficultyBadge(difficulty = difficulty, diff = Math.abs(targetKg - currentWeight))
 
-        // Дата
-        DatePickerRow(selectedDateMillis = selectedDateMillis, onPickDate = { showDatePicker = true }, onClearDate = { selectedDateMillis = null })
+        DatePickerRow(
+            selectedDateMillis = selectedDateMillis,
+            onPickDate = { showDatePicker = true },
+            onClearDate = { selectedDateMillis = null },
+        )
 
         Button(
             onClick = {
-                onConfirm(GoalParams.BodyWeight(
-                    currentWeightKg  = currentWeight,
-                    targetWeightKg   = targetKg,
-                    deadlineMillis   = selectedDateMillis,
-                ))
+                onConfirm(
+                    GoalParams.BodyWeight(
+                        currentWeightKg = currentWeight,
+                        targetWeightKg = targetKg,
+                        deadlineMillis = selectedDateMillis,
+                    )
+                )
             },
             enabled = canConfirm,
             modifier = Modifier.fillMaxWidth().height(52.dp),
@@ -328,12 +365,16 @@ private fun BodyWeightGoalForm(
 @Composable
 private fun DifficultyBadge(difficulty: WeightGoalDifficulty, diff: Double) {
     val (bg, fg) = when (difficulty) {
-        WeightGoalDifficulty.EASY       -> Color(0xFF4CAF50).copy(0.15f) to Color(0xFF4CAF50)
+        WeightGoalDifficulty.EASY -> Color(0xFF4CAF50).copy(0.15f) to Color(0xFF4CAF50)
         WeightGoalDifficulty.REASONABLE -> Color(0xFF2196F3).copy(0.15f) to Color(0xFF2196F3)
-        WeightGoalDifficulty.HARD       -> Color(0xFFFF6D00).copy(0.15f) to Color(0xFFFF6D00)
+        WeightGoalDifficulty.HARD -> Color(0xFFFF6D00).copy(0.15f) to Color(0xFFFF6D00)
     }
     Row(
-        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(bg).padding(12.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(bg)
+            .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
@@ -345,8 +386,6 @@ private fun DifficultyBadge(difficulty: WeightGoalDifficulty, diff: Double) {
     }
 }
 
-// ── Форма: Win Streak ─────────────────────────────────────────────
-
 @Composable
 private fun WinStreakGoalForm(
     onConfirm: (GoalParams.WinStreak) -> Unit,
@@ -356,7 +395,9 @@ private fun WinStreakGoalForm(
 
     Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            IconButton(onClick = onBack, modifier = Modifier.size(32.dp)) { Icon(Icons.Default.ArrowBack, null, modifier = Modifier.size(20.dp)) }
+            IconButton(onClick = onBack, modifier = Modifier.size(32.dp)) {
+                Icon(Icons.Default.ArrowBack, null, modifier = Modifier.size(20.dp))
+            }
             Text("Win Streak 🔥", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold)
         }
 
@@ -388,7 +429,13 @@ private fun WinStreakGoalForm(
                     Text("${duration.days} дней подряд", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 if (isSelected) {
-                    Box(modifier = Modifier.size(22.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary), contentAlignment = Alignment.Center) {
+                    Box(
+                        modifier = Modifier
+                            .size(22.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary),
+                        contentAlignment = Alignment.Center,
+                    ) {
                         Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(14.dp))
                     }
                 }
@@ -409,8 +456,6 @@ private fun WinStreakGoalForm(
     }
 }
 
-// ── Вспомогательные компоненты ────────────────────────────────────
-
 @Composable
 private fun DatePickerRow(
     selectedDateMillis: Long?,
@@ -423,7 +468,11 @@ private fun DatePickerRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        OutlinedButton(onClick = onPickDate, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp)) {
+        OutlinedButton(
+            onClick = onPickDate,
+            modifier = Modifier.weight(1f),
+            shape = RoundedCornerShape(12.dp),
+        ) {
             Icon(Icons.Default.CalendarToday, null, modifier = Modifier.size(16.dp))
             Spacer(Modifier.width(6.dp))
             Text(

@@ -13,7 +13,6 @@ import com.obsession.app.ui.bodyrank.ExerciseRanksScreen
 import com.obsession.app.ui.bodytab.BodyAnalysisTabScreen
 import com.obsession.app.ui.exercises.ExerciseDetailScreen
 import com.obsession.app.ui.exercises.ExercisesScreen
-import com.obsession.app.ui.goals.AddGoalDialog
 import com.obsession.app.ui.habits.HabitTrackerScreen
 import com.obsession.app.ui.home.HomeScreen
 import com.obsession.app.ui.onboarding.OnboardingProfileScreen
@@ -37,7 +36,7 @@ fun ObsessionNavHost() {
     val navBackStackEntry by nav.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    val slideIn:  AnimatedContentTransitionScope<*>.() -> EnterTransition = {
+    val slideIn: AnimatedContentTransitionScope<*>.() -> EnterTransition = {
         slideInHorizontally(tween(NAV_MS)) { it / 3 } + fadeIn(tween(NAV_MS))
     }
     val slideOut: AnimatedContentTransitionScope<*>.() -> ExitTransition = {
@@ -46,11 +45,11 @@ fun ObsessionNavHost() {
     val popEnter: AnimatedContentTransitionScope<*>.() -> EnterTransition = {
         slideInHorizontally(tween(NAV_MS)) { -it / 3 } + fadeIn(tween(NAV_MS))
     }
-    val popExit:  AnimatedContentTransitionScope<*>.() -> ExitTransition = {
+    val popExit: AnimatedContentTransitionScope<*>.() -> ExitTransition = {
         slideOutHorizontally(tween(NAV_MS)) { it / 3 } + fadeOut(tween(NAV_MS))
     }
     val tabEnter: AnimatedContentTransitionScope<*>.() -> EnterTransition = { fadeIn(tween(200)) }
-    val tabExit:  AnimatedContentTransitionScope<*>.() -> ExitTransition  = { fadeOut(tween(150)) }
+    val tabExit: AnimatedContentTransitionScope<*>.() -> ExitTransition = { fadeOut(tween(150)) }
 
     val showBottomBar = shouldShowBottomBar(currentRoute)
 
@@ -59,16 +58,15 @@ fun ObsessionNavHost() {
         contentWindowInsets = WindowInsets(0),
     ) { innerPadding ->
         NavHost(
-            navController    = nav,
+            navController = nav,
             startDestination = Screen.Splash.route,
-            modifier         = Modifier.padding(innerPadding),
-            enterTransition  = slideIn,
-            exitTransition   = slideOut,
+            modifier = Modifier.padding(innerPadding),
+            enterTransition = slideIn,
+            exitTransition = slideOut,
             popEnterTransition = popEnter,
-            popExitTransition  = popExit,
+            popExitTransition = popExit,
         ) {
 
-            // ── Splash ────────────────────────────────────────────
             composable(Screen.Splash.route) {
                 SplashScreen(
                     onNeedsProfile = {
@@ -89,7 +87,6 @@ fun ObsessionNavHost() {
                 )
             }
 
-            // ── Onboarding ────────────────────────────────────────
             composable(Screen.OnboardingProfile.route) {
                 OnboardingProfileScreen(
                     onDone = {
@@ -99,6 +96,7 @@ fun ObsessionNavHost() {
                     }
                 )
             }
+
             composable(Screen.Enter1Rm.route) {
                 Enter1RmScreen(
                     onDone = {
@@ -109,107 +107,94 @@ fun ObsessionNavHost() {
                 )
             }
 
-            // ── Home (центр bottom nav) ───────────────────────────
             composable(
-                route              = Screen.Home.route,
-                enterTransition    = tabEnter,
-                exitTransition     = tabExit,
+                route = Screen.Home.route,
+                enterTransition = tabEnter,
+                exitTransition = tabExit,
                 popEnterTransition = tabEnter,
-                popExitTransition  = tabExit,
+                popExitTransition = tabExit,
             ) {
-                // Диалог добавления цели управляется локально
-                var showAddGoal by remember { mutableStateOf(false) }
-
                 HomeScreen(
                     onStartWorkout = { sessionId ->
                         nav.navigate(Screen.WorkoutSession.build(sessionId))
                     },
                     onOpenSettings = { nav.navigate(Screen.Settings.route) },
-                    onOpenRanks    = { nav.navigate(Screen.StrengthRanks.route) },
-                    onOpenProfile  = { nav.navigate(Screen.Profile.route) },
-                    onAddGoal      = { showAddGoal = true },
+                    onOpenRanks = { nav.navigate(Screen.StrengthRanks.route) },
+                    onOpenProfile = { nav.navigate(Screen.Profile.route) },
+                    onAddGoal = { /* handled inside HomeScreen via ViewModel */ },
                 )
-
-                if (showAddGoal) {
-                    // AddGoalDialog — инжектируется данными через ViewModel уровня HomeScreen
-                    // Здесь упрощённо — передаём через nav
-                    // Для полноценной реализации используйте GoalAddViewModel
-                    showAddGoal = false // placeholder, реальный диалог показывается внутри HomeScreen
-                }
             }
 
-            // ── Workouts ──────────────────────────────────────────
             composable(
-                route              = Screen.Workouts.route,
-                enterTransition    = tabEnter,
-                exitTransition     = tabExit,
+                route = Screen.Workouts.route,
+                enterTransition = tabEnter,
+                exitTransition = tabExit,
                 popEnterTransition = tabEnter,
-                popExitTransition  = tabExit,
+                popExitTransition = tabExit,
             ) {
                 WorkoutsTabScreen(
-                    onCreatePlan   = { nav.navigate(Screen.PlanEditor.build(null)) },
-                    onEditPlan     = { id -> nav.navigate(Screen.PlanEditor.build(id)) },
-                    onViewPlan     = { id -> nav.navigate(Screen.PlanDetail.build(id)) },
+                    onCreatePlan = { nav.navigate(Screen.PlanEditor.build(null)) },
+                    onEditPlan = { id -> nav.navigate(Screen.PlanEditor.build(id)) },
+                    onViewPlan = { id -> nav.navigate(Screen.PlanDetail.build(id)) },
                     onExerciseClick = { id -> nav.navigate(Screen.ExerciseDetail.build(id)) },
                 )
             }
 
-            // ── Progress ──────────────────────────────────────────
             composable(
-                route              = Screen.Progress.route,
-                enterTransition    = tabEnter,
-                exitTransition     = tabExit,
+                route = Screen.Progress.route,
+                enterTransition = tabEnter,
+                exitTransition = tabExit,
                 popEnterTransition = tabEnter,
-                popExitTransition  = tabExit,
+                popExitTransition = tabExit,
             ) {
                 ProgressScreen(onBack = { }, isEmbedded = true)
             }
 
-            // ── Body Analysis Tab ─────────────────────────────────
             composable(
-                route              = Screen.BodyAnalysisTab.route,
-                enterTransition    = tabEnter,
-                exitTransition     = tabExit,
+                route = Screen.BodyAnalysisTab.route,
+                enterTransition = tabEnter,
+                exitTransition = tabExit,
                 popEnterTransition = tabEnter,
-                popExitTransition  = tabExit,
+                popExitTransition = tabExit,
             ) {
                 BodyAnalysisTabScreen()
             }
 
-            // ── Habit Tracker ─────────────────────────────────────
             composable(
-                route              = Screen.HabitTracker.route,
-                enterTransition    = tabEnter,
-                exitTransition     = tabExit,
+                route = Screen.HabitTracker.route,
+                enterTransition = tabEnter,
+                exitTransition = tabExit,
                 popEnterTransition = tabEnter,
-                popExitTransition  = tabExit,
+                popExitTransition = tabExit,
             ) {
                 HabitTrackerScreen()
             }
 
-            // ── Profile ───────────────────────────────────────────
             composable(Screen.Profile.route) {
                 ProfileScreen(onOpenSettings = { nav.navigate(Screen.Settings.route) })
             }
 
-            // ── Detail screens ────────────────────────────────────
             composable(Screen.StrengthRanks.route) {
                 StrengthRanksScreen(onBack = { nav.popBackStack() })
             }
+
             composable(Screen.BodyAnalysis.route) {
                 BodyAnalysisScreen(onBack = { nav.popBackStack() })
             }
+
             composable(Screen.ExerciseRanks.route) {
                 ExerciseRanksScreen(onBack = { nav.popBackStack() })
             }
+
             composable(Screen.Plans.route) {
                 PlansScreen(
-                    onBack       = { nav.popBackStack() },
+                    onBack = { nav.popBackStack() },
                     onCreatePlan = { nav.navigate(Screen.PlanEditor.build(null)) },
-                    onEditPlan   = { id -> nav.navigate(Screen.PlanEditor.build(id)) },
-                    onViewPlan   = { id -> nav.navigate(Screen.PlanDetail.build(id)) },
+                    onEditPlan = { id -> nav.navigate(Screen.PlanEditor.build(id)) },
+                    onViewPlan = { id -> nav.navigate(Screen.PlanDetail.build(id)) },
                 )
             }
+
             composable(
                 Screen.PlanDetail.route,
                 arguments = listOf(navArgument(Screen.PlanDetail.ARG_PLAN_ID) { type = NavType.LongType }),
@@ -219,24 +204,28 @@ fun ObsessionNavHost() {
                     onEdit = { id -> nav.navigate(Screen.PlanEditor.build(id)) },
                 )
             }
+
             composable(
                 Screen.PlanEditor.route,
                 arguments = listOf(navArgument("planId") { type = NavType.LongType; defaultValue = -1L }),
             ) {
                 PlanEditorScreen(onBack = { nav.popBackStack() })
             }
+
             composable(Screen.Exercises.route) {
                 ExercisesScreen(
-                    onBack          = { nav.popBackStack() },
+                    onBack = { nav.popBackStack() },
                     onExerciseClick = { id -> nav.navigate(Screen.ExerciseDetail.build(id)) },
                 )
             }
+
             composable(
                 Screen.ExerciseDetail.route,
                 arguments = listOf(navArgument(Screen.ExerciseDetail.ARG_EXERCISE_ID) { type = NavType.LongType }),
             ) {
                 ExerciseDetailScreen(onBack = { nav.popBackStack() })
             }
+
             composable(
                 Screen.WorkoutSession.route,
                 arguments = listOf(navArgument(Screen.WorkoutSession.ARG_SESSION_ID) { type = NavType.LongType }),
@@ -245,6 +234,7 @@ fun ObsessionNavHost() {
                     onBack = { nav.popBackStack() },
                 )
             }
+
             composable(Screen.Settings.route) {
                 SettingsScreen(onBack = { nav.popBackStack() })
             }

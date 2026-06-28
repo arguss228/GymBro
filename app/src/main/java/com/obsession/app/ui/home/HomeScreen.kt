@@ -14,67 +14,60 @@ import androidx.compose.ui.*
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.*
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.obsession.app.data.repository.RankState
+import com.obsession.app.domain.goals.GoalType
 import com.obsession.app.domain.goals.UserGoal
-import com.obsession.app.domain.rank.Rank
-import com.obsession.app.domain.rank.RankState
-
-// ════════════════════════════════════════════════════════════════
-//  HomeScreen
-// ════════════════════════════════════════════════════════════════
+import com.obsession.app.domain.model.StrengthRank
 
 @Composable
 fun HomeScreen(
-    onStartWorkout: () -> Unit,
-    onViewRank: () -> Unit,
+    onStartWorkout: (Long) -> Unit,
+    onOpenSettings: () -> Unit,
+    onOpenRanks: () -> Unit,
+    onOpenProfile: () -> Unit,
     onAddGoal: () -> Unit,
-    onViewGoals: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    // Поздравление при достижении цели
     if (state.achievedGoal != null) {
         GoalAchievedDialog(goal = state.achievedGoal!!, onDismiss = viewModel::dismissAchievedGoal)
     }
 
     LazyColumn(
-        modifier        = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
-        contentPadding  = PaddingValues(bottom = 120.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+        contentPadding = PaddingValues(bottom = 120.dp),
         verticalArrangement = Arrangement.spacedBy(0.dp),
     ) {
-        // ── Заголовок ────────────────────────────────────────────
         item { HomeHeader(userName = state.userName) }
-
-        // ── Основные карточки (ранги) ─────────────────────────
-        item { RankCardsSection(state = state, onViewRank = onViewRank) }
-
-        // ── Статистика (последние 14 тренировок) ──────────────
+        item { RankCardsSection(state = state, onViewRank = onOpenRanks) }
         item { Spacer(Modifier.height(20.dp)) }
         item { StatsSection(state = state) }
-
-        // ── Цели ─────────────────────────────────────────────
         item { Spacer(Modifier.height(20.dp)) }
-        item { GoalsSection(state = state, onAddGoal = onAddGoal, onViewGoals = onViewGoals) }
-
-        // ── Кнопка тренировки ─────────────────────────────────
+        item {
+            GoalsSection(
+                state = state,
+                onAddGoal = onAddGoal,
+                onViewGoals = {},
+            )
+        }
         item { Spacer(Modifier.height(20.dp)) }
         item {
             StartWorkoutButton(
                 hasActivePlan = state.hasActivePlan,
-                onClick       = onStartWorkout,
-                modifier      = Modifier.padding(horizontal = 20.dp),
+                onClick = { viewModel.onStartWorkout(onStartWorkout) },
+                modifier = Modifier.padding(horizontal = 20.dp),
             )
         }
     }
 }
-
-// ── Header ────────────────────────────────────────────────────────
 
 @Composable
 private fun HomeHeader(userName: String) {
@@ -84,12 +77,11 @@ private fun HomeHeader(userName: String) {
             .windowInsetsPadding(WindowInsets.statusBars)
             .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 16.dp),
     ) {
-        // ИСПРАВЛЕНИЕ: название приложения «Obsession»
         Text(
-            text       = "Obsession",
-            style      = MaterialTheme.typography.displaySmall,
+            text = "Obsession",
+            style = MaterialTheme.typography.displaySmall,
             fontWeight = FontWeight.Black,
-            color      = MaterialTheme.colorScheme.primary,
+            color = MaterialTheme.colorScheme.primary,
             letterSpacing = (-0.5).sp,
         )
         if (userName.isNotBlank()) {
@@ -102,28 +94,23 @@ private fun HomeHeader(userName: String) {
     }
 }
 
-// ── Rank cards ────────────────────────────────────────────────────
-
 @Composable
 private fun RankCardsSection(state: HomeUiState, onViewRank: () -> Unit) {
-    // ИСПРАВЛЕНИЕ: одинаковый размер обеих карточек
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        // Общий ранг тела
         BodyRankCard(
             rankState = state.bodyRankState,
-            modifier  = Modifier.weight(1f),
-            onClick   = onViewRank,
+            modifier = Modifier.weight(1f),
+            onClick = onViewRank,
         )
-        // Ранг в Пауэрлифтинге
         PowerliftingRankCard(
             rankState = state.plRankState,
-            modifier  = Modifier.weight(1f),
-            onClick   = onViewRank,
+            modifier = Modifier.weight(1f),
+            onClick = onViewRank,
         )
     }
 }
@@ -132,13 +119,13 @@ private fun RankCardsSection(state: HomeUiState, onViewRank: () -> Unit) {
 private fun BodyRankCard(rankState: RankState, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val rank = rankState.currentRank
     FlippableRankCard(
-        modifier    = modifier,
-        rank        = rank,
-        title       = "Общий ранг",
-        subtitle    = "тела",
-        stats       = null,
-        progress    = rankState.progress,
-        onClick     = onClick,
+        modifier = modifier,
+        rank = rank,
+        title = "Общий ранг",
+        subtitle = "тела",
+        stats = null,
+        progress = rankState.progress,
+        onClick = onClick,
     )
 }
 
@@ -146,23 +133,19 @@ private fun BodyRankCard(rankState: RankState, modifier: Modifier = Modifier, on
 private fun PowerliftingRankCard(rankState: RankState, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val rank = rankState.currentRank
     FlippableRankCard(
-        modifier    = modifier,
-        rank        = rank,
-        title       = "Ранг в",
-        subtitle    = "Пауэрлифтинге",
-        stats       = Triple(rankState.bench, rankState.squat, rankState.deadlift),
-        progress    = rankState.progress,
-        onClick     = onClick,
+        modifier = modifier,
+        rank = rank,
+        title = "Ранг в",
+        subtitle = "Пауэрлифтинге",
+        stats = Triple(rankState.bench, rankState.squat, rankState.deadlift),
+        progress = rankState.progress,
+        onClick = onClick,
     )
 }
 
-/**
- * ИСПРАВЛЕНИЕ: обе карточки имеют одинаковые размеры после переворота.
- * Высота зафиксирована через .height(220.dp).
- */
 @Composable
 private fun FlippableRankCard(
-    rank: Rank,
+    rank: StrengthRank,
     title: String,
     subtitle: String,
     stats: Triple<Double, Double, Double>?,
@@ -172,17 +155,17 @@ private fun FlippableRankCard(
 ) {
     var flipped by remember { mutableStateOf(false) }
     val rotation by animateFloatAsState(
-        targetValue  = if (flipped) 180f else 0f,
+        targetValue = if (flipped) 180f else 0f,
         animationSpec = tween(500, easing = FastOutSlowInEasing),
-        label        = "card_flip",
+        label = "card_flip",
     )
 
     Box(
         modifier = modifier
-            .height(220.dp) // ИСПРАВЛЕНИЕ: фиксированная высота = одинаковый размер
+            .height(220.dp)
             .graphicsLayer {
-                rotationY         = rotation
-                cameraDistance    = 12f * density
+                rotationY = rotation
+                cameraDistance = 12f * density
             }
             .clip(RoundedCornerShape(24.dp))
             .background(
@@ -195,20 +178,18 @@ private fun FlippableRankCard(
             .padding(14.dp),
     ) {
         if (rotation <= 90f) {
-            // Лицевая сторона
             Column(
-                modifier            = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.SpaceBetween,
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(title,    style = MaterialTheme.typography.labelSmall, color = Color.White.copy(0.45f), letterSpacing = 0.5.sp)
+                    Text(title, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(0.45f), letterSpacing = 0.5.sp)
                     Text(subtitle, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(0.45f), letterSpacing = 0.5.sp)
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
                     Text(rank.symbol, fontSize = 38.sp)
                     Text(rank.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = rank.primaryColor, textAlign = TextAlign.Center, maxLines = 1)
                 }
-                // Прогресс-бар
                 Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Box(modifier = Modifier.fillMaxWidth().height(5.dp).clip(RoundedCornerShape(2.5.dp)).background(Color.White.copy(0.08f))) {
                         Box(modifier = Modifier.fillMaxWidth(progress.coerceIn(0f, 1f)).fillMaxHeight().clip(RoundedCornerShape(2.5.dp)).background(Brush.horizontalGradient(listOf(rank.primaryColor, rank.secondaryColor))))
@@ -217,10 +198,9 @@ private fun FlippableRankCard(
                 }
             }
         } else {
-            // Обратная сторона (зеркалим из-за переворота)
             Box(modifier = Modifier.fillMaxSize().graphicsLayer { rotationY = 180f }) {
                 Column(
-                    modifier            = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(rank.description, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(0.55f), lineHeight = 16.sp)
@@ -242,8 +222,6 @@ private fun FlippableRankCard(
     }
 }
 
-// ── Stats Section ─────────────────────────────────────────────────
-
 @Composable
 private fun StatsSection(state: HomeUiState) {
     Column(
@@ -257,38 +235,34 @@ private fun StatsSection(state: HomeUiState) {
             color = MaterialTheme.colorScheme.onBackground,
         )
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            // ИСПРАВЛЕНИЕ: Тоннаж — суммарный поднятый вес
             StatTile(
-                icon   = "🏋️",
-                value  = formatTonnage(state.totalTonnageKg),
-                label  = "Тоннаж",
-                color  = Color(0xFF7C4DFF),
+                icon = "🏋️",
+                value = formatTonnage(state.totalTonnageKg),
+                label = "Тоннаж",
+                color = Color(0xFF7C4DFF),
                 modifier = Modifier.weight(1f),
             )
-            // ИСПРАВЛЕНИЕ: Время тренировок — суммарно за всё время, в минутах
             StatTile(
-                icon   = "⏱️",
-                value  = formatDuration(state.totalWorkoutMinutes),
-                label  = "Время",
-                color  = Color(0xFF2196F3),
+                icon = "⏱️",
+                value = formatDuration(state.totalWorkoutMinutes),
+                label = "Время",
+                color = Color(0xFF2196F3),
                 modifier = Modifier.weight(1f),
             )
         }
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            // ИСПРАВЛЕНИЕ: Количество рекордов
             StatTile(
-                icon   = "🏆",
-                value  = state.totalRecords.toString(),
-                label  = "Рекорды",
-                color  = Color(0xFFFF9800),
+                icon = "🏆",
+                value = state.totalRecords.toString(),
+                label = "Рекорды",
+                color = Color(0xFFFF9800),
                 modifier = Modifier.weight(1f),
             )
-            // ИСПРАВЛЕНИЕ: Мой вес — из профиля
             StatTile(
-                icon   = "⚖️",
-                value  = if (state.userWeightKg > 0) "${"%.1f".format(state.userWeightKg)} кг" else "—",
-                label  = "Мой вес",
-                color  = Color(0xFF4CAF50),
+                icon = "⚖️",
+                value = if (state.userWeightKg > 0) "${"%.1f".format(state.userWeightKg)} кг" else "—",
+                label = "Мой вес",
+                color = Color(0xFF4CAF50),
                 modifier = Modifier.weight(1f),
             )
         }
@@ -300,9 +274,7 @@ private fun StatTile(icon: String, value: String, label: String, color: Color, m
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(18.dp))
-            .background(
-                Brush.linearGradient(listOf(color.copy(alpha = 0.12f), color.copy(alpha = 0.05f)))
-            )
+            .background(Brush.linearGradient(listOf(color.copy(alpha = 0.12f), color.copy(alpha = 0.05f))))
             .border(1.dp, color.copy(alpha = 0.18f), RoundedCornerShape(18.dp))
             .padding(horizontal = 14.dp, vertical = 14.dp),
     ) {
@@ -310,11 +282,11 @@ private fun StatTile(icon: String, value: String, label: String, color: Color, m
             Text(icon, fontSize = 22.sp)
             Text(
                 value,
-                style      = MaterialTheme.typography.headlineSmall,
+                style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Black,
-                color      = color,
-                maxLines   = 1,
-                overflow   = TextOverflow.Ellipsis,
+                color = color,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
             Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
@@ -324,18 +296,16 @@ private fun StatTile(icon: String, value: String, label: String, color: Color, m
 private fun formatTonnage(kg: Double): String {
     return when {
         kg >= 1000.0 -> "${"%.1f".format(kg / 1000.0)} т"
-        else         -> "${kg.toInt()} кг"
+        else -> "${kg.toInt()} кг"
     }
 }
 
 private fun formatDuration(minutes: Long): String {
     return when {
         minutes >= 60 -> "${minutes / 60}ч ${minutes % 60}м"
-        else          -> "${minutes}м"
+        else -> "${minutes}м"
     }
 }
-
-// ── Goals Section ─────────────────────────────────────────────────
 
 @Composable
 private fun GoalsSection(
@@ -417,8 +387,8 @@ private fun EmptyGoalsPlaceholder(onAddGoal: () -> Unit) {
 @Composable
 private fun GoalCard(goal: UserGoal) {
     val accentColor = goalColor(goal)
-    val progress    = goal.progress.coerceIn(0f, 1f)
-    val isDone      = goal.isCompleted
+    val progress = goal.progress.coerceIn(0f, 1f)
+    val isDone = goal.isCompleted
 
     Box(
         modifier = Modifier
@@ -467,41 +437,37 @@ private fun GoalCard(goal: UserGoal) {
 }
 
 private fun goalColor(goal: UserGoal): Color = when (goal.type) {
-    GoalType.STRENGTH   -> Color(0xFF7C4DFF)
+    GoalType.STRENGTH -> Color(0xFF7C4DFF)
     GoalType.BODY_WEIGHT -> Color(0xFF4CAF50)
-    GoalType.WIN_STREAK  -> Color(0xFFFF6D00)
+    GoalType.WIN_STREAK -> Color(0xFFFF6D00)
 }
 
 private fun goalIcon(goal: UserGoal): String = when (goal.type) {
-    GoalType.STRENGTH   -> "💪"
+    GoalType.STRENGTH -> "💪"
     GoalType.BODY_WEIGHT -> "⚖️"
-    GoalType.WIN_STREAK  -> "🔥"
+    GoalType.WIN_STREAK -> "🔥"
 }
-
-// ── Start workout button ──────────────────────────────────────────
 
 @Composable
 private fun StartWorkoutButton(hasActivePlan: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Button(
-        onClick  = onClick,
+        onClick = onClick,
         modifier = modifier.fillMaxWidth().height(60.dp),
-        shape    = RoundedCornerShape(20.dp),
-        colors   = ButtonDefaults.buttonColors(
+        shape = RoundedCornerShape(20.dp),
+        colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.primary,
-            contentColor   = MaterialTheme.colorScheme.onPrimary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
         ),
     ) {
         Icon(Icons.Default.PlayArrow, null, modifier = Modifier.size(24.dp))
         Spacer(Modifier.width(10.dp))
         Text(
             if (hasActivePlan) "Начать тренировку" else "Выбрать план",
-            style      = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.ExtraBold,
         )
     }
 }
-
-// ── Goal achieved dialog ─────────────────────────────────────────
 
 @Composable
 private fun GoalAchievedDialog(goal: UserGoal, onDismiss: () -> Unit) {

@@ -33,11 +33,11 @@ class WorkoutsTabViewModel @Inject constructor(
         observeLevel(),
     ) { plans, active, level ->
         WorkoutsTabUiState(
-            allPlans     = plans,
-            userPlans    = plans.filter { !it.isPreset },
+            allPlans = plans,
+            userPlans = plans.filter { !it.isPreset },
             activePlanId = active?.id,
-            userLevel    = level.level,
-            isLoading    = false,
+            userLevel = level.level,
+            isLoading = false,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), WorkoutsTabUiState())
 

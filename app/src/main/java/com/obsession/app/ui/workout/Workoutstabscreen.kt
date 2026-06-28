@@ -14,7 +14,6 @@ import androidx.compose.ui.*
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.geometry.*
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.graphics.drawscope.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.*
@@ -22,6 +21,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.obsession.app.data.local.entity.WorkoutPlanEntity
 import com.obsession.app.ui.exercises.ExercisesScreen
+import com.obsession.app.ui.workouts.WorkoutsTabUiState
+import com.obsession.app.ui.workouts.WorkoutsTabViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,22 +41,20 @@ fun WorkoutsTabScreen(
 
         when (selectedTab) {
             0 -> PlansTab(
-                state        = state,
+                state = state,
                 onCreatePlan = onCreatePlan,
-                onEditPlan   = onEditPlan,
-                onViewPlan   = onViewPlan,
-                onDelete     = viewModel::deletePlan,
+                onEditPlan = onEditPlan,
+                onViewPlan = onViewPlan,
+                onDelete = viewModel::deletePlan,
             )
             1 -> ExercisesScreen(
-                onBack          = { /* embedded */ },
+                onBack = { /* embedded */ },
                 onExerciseClick = onExerciseClick,
-                isEmbedded      = true,
+                isEmbedded = true,
             )
         }
     }
 }
-
-// ── Header — ИСПРАВЛЕНО: добавлен padding top для статус-бара ─────
 
 @Composable
 private fun WorkoutsHeader(selectedTab: Int, onTabSelect: (Int) -> Unit) {
@@ -63,15 +62,14 @@ private fun WorkoutsHeader(selectedTab: Int, onTabSelect: (Int) -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background)
-            // ИСПРАВЛЕНИЕ: добавлен WindowInsets padding сверху чтобы заголовок не обрезался
             .windowInsetsPadding(WindowInsets.statusBars)
             .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 0.dp),
     ) {
         Text(
             "Тренировки",
-            style      = MaterialTheme.typography.headlineMedium,
+            style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.ExtraBold,
-            color      = MaterialTheme.colorScheme.onBackground,
+            color = MaterialTheme.colorScheme.onBackground,
         )
         Spacer(Modifier.height(14.dp))
         Row(
@@ -95,10 +93,10 @@ private fun WorkoutsHeader(selectedTab: Int, onTabSelect: (Int) -> Unit) {
                 ) {
                     Text(
                         title,
-                        style      = MaterialTheme.typography.titleSmall,
+                        style = MaterialTheme.typography.titleSmall,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                        color      = if (isSelected) MaterialTheme.colorScheme.onPrimary
-                                     else MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = if (isSelected) MaterialTheme.colorScheme.onPrimary
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -106,8 +104,6 @@ private fun WorkoutsHeader(selectedTab: Int, onTabSelect: (Int) -> Unit) {
         Spacer(Modifier.height(4.dp))
     }
 }
-
-// ── Plans Tab ─────────────────────────────────────────────────────
 
 @Composable
 private fun PlansTab(
@@ -117,22 +113,22 @@ private fun PlansTab(
     onViewPlan: (Long) -> Unit,
     onDelete: (Long) -> Unit,
 ) {
-    val beginnerPresets     = state.allPlans.filter { it.isPreset && it.minLevel <= 4 }
+    val beginnerPresets = state.allPlans.filter { it.isPreset && it.minLevel <= 4 }
     val intermediatePresets = state.allPlans.filter { it.isPreset && it.minLevel in 5..9 }
-    val advancedPresets     = state.allPlans.filter { it.isPreset && it.minLevel >= 10 }
+    val advancedPresets = state.allPlans.filter { it.isPreset && it.minLevel >= 10 }
 
     LazyColumn(
-        modifier        = Modifier.fillMaxSize(),
-        contentPadding  = PaddingValues(bottom = 120.dp, top = 8.dp),
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(bottom = 120.dp, top = 8.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         if (beginnerPresets.isNotEmpty()) {
             item { PlanSectionHeader("Новичок", "Базовые программы · 3–4 дня/нед", "🌱", Color(0xFF4CAF50)) }
             item {
                 PresetPlanRow(
-                    plans        = beginnerPresets,
+                    plans = beginnerPresets,
                     activePlanId = state.activePlanId,
-                    onViewPlan   = onViewPlan,
+                    onViewPlan = onViewPlan,
                     gradientPool = listOf(
                         listOf(Color(0xFF4CAF50), Color(0xFF66BB6A), Color(0xFF1B5E20)),
                         listOf(Color(0xFF2196F3), Color(0xFF42A5F5), Color(0xFF0D47A1)),
@@ -149,9 +145,9 @@ private fun PlansTab(
             item { PlanSectionHeader("Средний", "Сплит-программы · 4–5 дней/нед", "💎", Color(0xFF2196F3)) }
             item {
                 PresetPlanRow(
-                    plans        = intermediatePresets,
+                    plans = intermediatePresets,
                     activePlanId = state.activePlanId,
-                    onViewPlan   = onViewPlan,
+                    onViewPlan = onViewPlan,
                     gradientPool = listOf(
                         listOf(Color(0xFF1565C0), Color(0xFF42A5F5), Color(0xFF0A2472)),
                         listOf(Color(0xFF2E7D32), Color(0xFF81C784), Color(0xFF1B5E20)),
@@ -167,9 +163,9 @@ private fun PlansTab(
             item { PlanSectionHeader("Опытный", "PPL и силовые · 5–6 дней/нед", "⚡", Color(0xFFFF9800)) }
             item {
                 PresetPlanRow(
-                    plans        = advancedPresets,
+                    plans = advancedPresets,
                     activePlanId = state.activePlanId,
-                    onViewPlan   = onViewPlan,
+                    onViewPlan = onViewPlan,
                     gradientPool = listOf(
                         listOf(Color(0xFFFF6F00), Color(0xFFFFAB00), Color(0xFFE65100)),
                         listOf(Color(0xFF006064), Color(0xFF00ACC1), Color(0xFF004D40)),
@@ -185,12 +181,12 @@ private fun PlansTab(
         item { PlanSectionHeader("Мои планы", "Созданные вами", "✏️", Color(0xFF7C4DFF)) }
         item {
             UserPlansRow(
-                plans        = state.userPlans,
+                plans = state.userPlans,
                 activePlanId = state.activePlanId,
                 onCreatePlan = onCreatePlan,
-                onViewPlan   = onViewPlan,
-                onEditPlan   = onEditPlan,
-                onDelete     = onDelete,
+                onViewPlan = onViewPlan,
+                onEditPlan = onEditPlan,
+                onDelete = onDelete,
             )
         }
     }
@@ -228,16 +224,16 @@ private fun PresetPlanRow(
     emojiPool: List<String>,
 ) {
     LazyRow(
-        contentPadding        = PaddingValues(horizontal = 20.dp),
+        contentPadding = PaddingValues(horizontal = 20.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         itemsIndexed(plans, key = { _, p -> p.id }) { index, plan ->
             PresetPlanCard(
-                plan     = plan,
+                plan = plan,
                 isActive = plan.id == activePlanId,
-                colors   = gradientPool.getOrElse(index) { gradientPool.first() },
-                emoji    = emojiPool.getOrElse(index) { "🏋️" },
-                onClick  = { onViewPlan(plan.id) },
+                colors = gradientPool.getOrElse(index) { gradientPool.first() },
+                emoji = emojiPool.getOrElse(index) { "🏋️" },
+                onClick = { onViewPlan(plan.id) },
             )
         }
     }
@@ -253,10 +249,10 @@ private fun PresetPlanCard(
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "glow_${plan.id}")
     val glowAlpha by infiniteTransition.animateFloat(
-        initialValue  = 0f,
-        targetValue   = 0.14f,
+        initialValue = 0f,
+        targetValue = 0.14f,
         animationSpec = infiniteRepeatable(tween(2400, easing = EaseInOutSine), RepeatMode.Reverse),
-        label         = "ga_${plan.id}",
+        label = "ga_${plan.id}",
     )
 
     Box(
@@ -267,21 +263,20 @@ private fun PresetPlanCard(
             .background(
                 Brush.linearGradient(
                     colors = colors,
-                    start  = Offset(0f, 0f),
-                    end    = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY),
+                    start = Offset(0f, 0f),
+                    end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY),
                 )
             )
             .drawBehind {
                 drawCircle(
-                    color  = Color.White.copy(alpha = 0.08f + glowAlpha),
+                    color = Color.White.copy(alpha = 0.08f + glowAlpha),
                     radius = size.width * 0.55f,
                     center = Offset(size.width * 0.85f, size.height * 0.15f),
                 )
             }
             .border(
                 width = if (isActive) 2.dp else 1.dp,
-                color = if (isActive) Color.White.copy(alpha = 0.9f)
-                        else Color.White.copy(alpha = 0.18f),
+                color = if (isActive) Color.White.copy(alpha = 0.9f) else Color.White.copy(alpha = 0.18f),
                 shape = RoundedCornerShape(24.dp),
             )
             .clickable { onClick() },
@@ -294,9 +289,9 @@ private fun PresetPlanCard(
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(
-                    modifier              = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment     = Alignment.Top,
+                    verticalAlignment = Alignment.Top,
                 ) {
                     Text(emoji, fontSize = 32.sp)
                     Box(
@@ -309,29 +304,29 @@ private fun PresetPlanCard(
                             .padding(horizontal = 7.dp, vertical = 3.dp),
                     ) {
                         Text(
-                            text          = if (isActive) "✓ АКТИВНЫЙ" else "ГОТОВЫЙ",
-                            style         = MaterialTheme.typography.labelSmall,
-                            fontWeight    = FontWeight.ExtraBold,
-                            color         = Color.White,
-                            fontSize      = 9.sp,
+                            text = if (isActive) "✓ АКТИВНЫЙ" else "ГОТОВЫЙ",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White,
+                            fontSize = 9.sp,
                             letterSpacing = 0.3.sp,
                         )
                     }
                 }
                 Text(
                     plan.name,
-                    style      = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.ExtraBold,
-                    color      = Color.White,
-                    maxLines   = 2,
-                    overflow   = TextOverflow.Ellipsis,
+                    color = Color.White,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
                     lineHeight = 20.sp,
                 )
                 plan.description?.let {
                     Text(
                         it,
-                        style    = MaterialTheme.typography.bodySmall,
-                        color    = Color.White.copy(alpha = 0.65f),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White.copy(alpha = 0.65f),
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         fontSize = 11.sp,
@@ -341,17 +336,17 @@ private fun PresetPlanCard(
 
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Row(
-                    modifier              = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment     = Alignment.CenterVertically,
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     StatPill("📅", "${plan.daysPerWeek}д/нед")
                     StatPill("⭐", "ур.${plan.minLevel}+")
                 }
                 Text(
                     "Нажмите для просмотра →",
-                    style    = MaterialTheme.typography.labelSmall,
-                    color    = Color.White.copy(alpha = 0.45f),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White.copy(alpha = 0.45f),
                     fontSize = 9.sp,
                 )
             }
@@ -366,7 +361,7 @@ private fun StatPill(icon: String, value: String) {
             .clip(RoundedCornerShape(8.dp))
             .background(Color.Black.copy(alpha = 0.2f))
             .padding(horizontal = 7.dp, vertical = 4.dp),
-        verticalAlignment     = Alignment.CenterVertically,
+        verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(3.dp),
     ) {
         Text(icon, fontSize = 10.sp)
@@ -408,21 +403,26 @@ private fun UserPlansRow(
                     Icon(Icons.Default.Add, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
                 }
                 Text("Создать свой план", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                Text("Настройте упражнения, дни и подходы под себя", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+                Text(
+                    "Настройте упражнения, дни и подходы под себя",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
             }
         }
     } else {
         LazyRow(
-            contentPadding        = PaddingValues(horizontal = 20.dp),
+            contentPadding = PaddingValues(horizontal = 20.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item { CreatePlanCard(onClick = onCreatePlan) }
             items(plans, key = { it.id }) { plan ->
                 UserPlanCard(
-                    plan     = plan,
+                    plan = plan,
                     isActive = plan.id == activePlanId,
-                    onClick  = { onViewPlan(plan.id) },
-                    onEdit   = { onEditPlan(plan.id) },
+                    onClick = { onViewPlan(plan.id) },
+                    onEdit = { onEditPlan(plan.id) },
                     onDelete = { onDelete(plan.id) },
                 )
             }
@@ -439,22 +439,45 @@ private fun CreatePlanCard(onClick: () -> Unit) {
             .clip(RoundedCornerShape(24.dp))
             .border(
                 2.dp,
-                Brush.linearGradient(listOf(MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f))),
+                Brush.linearGradient(
+                    listOf(
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                        MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f),
+                    )
+                ),
                 RoundedCornerShape(24.dp),
             )
             .clickable { onClick() }
             .padding(16.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
             Box(
-                modifier = Modifier.size(52.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+                modifier = Modifier
+                    .size(52.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(Icons.Default.Add, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(26.dp))
             }
-            Text("Новый план", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, textAlign = TextAlign.Center)
-            Text("Создайте свою программу", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center, fontSize = 10.sp)
+            Text(
+                "Новый план",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                "Создайте свою программу",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                fontSize = 10.sp,
+            )
         }
     }
 }
@@ -478,7 +501,12 @@ private fun UserPlanCard(
                 if (isActive)
                     Brush.linearGradient(listOf(accentColor.copy(alpha = 0.8f), Color(0xFF4A148C).copy(alpha = 0.9f)))
                 else
-                    Brush.linearGradient(listOf(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.surfaceVariant))
+                    Brush.linearGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.surfaceVariant,
+                            MaterialTheme.colorScheme.surfaceVariant,
+                        )
+                    )
             )
             .border(
                 if (isActive) 2.dp else 1.dp,
@@ -492,28 +520,67 @@ private fun UserPlanCard(
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     Text("✏️", fontSize = 24.sp)
                     if (isActive) {
-                        Box(modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Color.White.copy(alpha = 0.2f)).padding(horizontal = 6.dp, vertical = 2.dp)) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color.White.copy(alpha = 0.2f))
+                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                        ) {
                             Text("АКТИВНЫЙ", fontSize = 8.sp, color = Color.White, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.5.sp)
                         }
                     }
                 }
-                Text(plan.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.ExtraBold, color = if (isActive) Color.White else MaterialTheme.colorScheme.onSurface, maxLines = 3, overflow = TextOverflow.Ellipsis, lineHeight = 18.sp)
+                Text(
+                    plan.name,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = if (isActive) Color.White else MaterialTheme.colorScheme.onSurface,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = 18.sp,
+                )
                 plan.description?.let {
-                    Text(it, style = MaterialTheme.typography.bodySmall, color = if (isActive) Color.White.copy(0.65f) else MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis, fontSize = 10.sp)
+                    Text(
+                        it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (isActive) Color.White.copy(0.65f) else MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        fontSize = 10.sp,
+                    )
                 }
             }
 
-            Text("Нажмите для просмотра →", style = MaterialTheme.typography.labelSmall, color = if (isActive) Color.White.copy(0.5f) else MaterialTheme.colorScheme.onSurfaceVariant.copy(0.6f), fontSize = 9.sp)
+            Text(
+                "Нажмите для просмотра →",
+                style = MaterialTheme.typography.labelSmall,
+                color = if (isActive) Color.White.copy(0.5f) else MaterialTheme.colorScheme.onSurfaceVariant.copy(0.6f),
+                fontSize = 9.sp,
+            )
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 IconButton(onClick = onEdit, modifier = Modifier.size(34.dp)) {
-                    Icon(Icons.Default.Edit, null, tint = if (isActive) Color.White.copy(0.8f) else MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+                    Icon(
+                        Icons.Default.Edit,
+                        null,
+                        tint = if (isActive) Color.White.copy(0.8f) else MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp),
+                    )
                 }
                 IconButton(onClick = onDelete, modifier = Modifier.size(34.dp)) {
-                    Icon(Icons.Default.Delete, null, tint = if (isActive) Color.White.copy(0.6f) else MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp))
+                    Icon(
+                        Icons.Default.Delete,
+                        null,
+                        tint = if (isActive) Color.White.copy(0.6f) else MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(16.dp),
+                    )
                 }
             }
         }

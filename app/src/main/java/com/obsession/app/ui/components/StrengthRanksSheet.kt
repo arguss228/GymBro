@@ -23,17 +23,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.obsession.app.domain.rank.Rank
-
-// ════════════════════════════════════════════════════════════════
-//  ИСПРАВЛЕНИЕ: актуальная версия экрана рангов
-//  — только визуальное разделение, без текстовых надписей
-//    «Земная группа» и «Небесная группа»
-// ════════════════════════════════════════════════════════════════
+import com.obsession.app.domain.model.StrengthRank
+import com.obsession.app.domain.model.StrengthRanks
 
 @Composable
 fun StrengthRanksSheet(
-    currentRank: Rank,
+    currentRank: StrengthRank,
     onDismiss: () -> Unit,
 ) {
     Dialog(
@@ -45,7 +40,6 @@ fun StrengthRanksSheet(
                 .fillMaxSize()
                 .background(Color(0xFF070B14)),
         ) {
-            // Фоновый градиент
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -61,7 +55,6 @@ fun StrengthRanksSheet(
             )
 
             Column(modifier = Modifier.fillMaxSize()) {
-                // ── Шапка ─────────────────────────────────────────────
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -85,12 +78,10 @@ fun StrengthRanksSheet(
                     }
                 }
 
-                // ── Текущий ранг (hero) ───────────────────────────────
                 CurrentRankHero(rank = currentRank, modifier = Modifier.padding(horizontal = 16.dp))
 
                 Spacer(Modifier.height(24.dp))
 
-                // ── Все ранги — только визуально ─────────────────────
                 Text(
                     "Все ранги",
                     style = MaterialTheme.typography.titleMedium,
@@ -105,11 +96,11 @@ fun StrengthRanksSheet(
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    itemsIndexed(Rank.values()) { index, rank ->
+                    itemsIndexed(StrengthRanks.all) { index, rank ->
                         RankRow(
                             rank = rank,
-                            isCurrentRank = rank == currentRank,
-                            isUnlocked = rank.ordinal <= currentRank.ordinal,
+                            isCurrentRank = rank.name == currentRank.name,
+                            isUnlocked = index <= StrengthRanks.all.indexOf(currentRank),
                         )
                     }
                     item { Spacer(Modifier.navigationBarsPadding()) }
@@ -119,10 +110,8 @@ fun StrengthRanksSheet(
     }
 }
 
-// ── Hero блок текущего ранга ─────────────────────────────────────
-
 @Composable
-private fun CurrentRankHero(rank: Rank, modifier: Modifier = Modifier) {
+private fun CurrentRankHero(rank: StrengthRank, modifier: Modifier = Modifier) {
     val infiniteTransition = rememberInfiniteTransition(label = "hero_glow")
     val glowAlpha by infiniteTransition.animateFloat(
         initialValue  = 0.15f,
@@ -162,7 +151,6 @@ private fun CurrentRankHero(rank: Rank, modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            // Символ ранга
             Box(
                 modifier = Modifier
                     .size(72.dp)
@@ -197,11 +185,9 @@ private fun CurrentRankHero(rank: Rank, modifier: Modifier = Modifier) {
     }
 }
 
-// ── Строка одного ранга — ТОЛЬКО ВИЗУАЛЬНО, без текстовых групп ──
-
 @Composable
 private fun RankRow(
-    rank: Rank,
+    rank: StrengthRank,
     isCurrentRank: Boolean,
     isUnlocked: Boolean,
 ) {
@@ -239,7 +225,6 @@ private fun RankRow(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            // Символ ранга (цветной кружок + эмодзи)
             Box(
                 modifier = Modifier
                     .size(52.dp)
@@ -266,7 +251,6 @@ private fun RankRow(
                 )
             }
 
-            // Название + описание
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -303,21 +287,17 @@ private fun RankRow(
                 )
             }
 
-            // Визуальный индикатор уровня (цветная полоса)
             RankLevelBar(rank = rank, isUnlocked = isUnlocked)
         }
     }
 }
 
-/**
- * Вертикальная цветная полоска — визуальный уровень ранга.
- * Заменяет текстовые надписи «Земная группа» / «Небесная группа».
- */
 @Composable
-private fun RankLevelBar(rank: Rank, isUnlocked: Boolean) {
-    val totalRanks = Rank.values().size
-    val filled     = (rank.ordinal + 1).toFloat() / totalRanks.toFloat()
-    val alpha      = if (isUnlocked) 1f else 0.25f
+private fun RankLevelBar(rank: StrengthRank, isUnlocked: Boolean) {
+    val totalRanks = StrengthRanks.all.size
+    val rankIndex = StrengthRanks.all.indexOf(rank)
+    val filled = (rankIndex + 1).toFloat() / totalRanks.toFloat()
+    val alpha = if (isUnlocked) 1f else 0.25f
 
     Box(
         modifier = Modifier
