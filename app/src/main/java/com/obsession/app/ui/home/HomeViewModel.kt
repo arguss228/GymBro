@@ -35,6 +35,14 @@ data class HomeUiState(
     val achievedGoal: UserGoal? = null,
 )
 
+private data class HomeCombinedData(
+    val rankState: RankState,
+    val profile: UserProfileEntity?,
+    val logs: List<SetLogEntity>,
+    val prs: List<PersonalRecordEntity>,
+    val goals: List<UserGoal>,
+)
+
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val rankRepo: RankRepository,
@@ -55,27 +63,28 @@ class HomeViewModel @Inject constructor(
         setLogDao.observeAllSetLogs(),
         prDao.observeAll(),
         goalRepo.observeGoals(),
-        workoutPlanDao.observeActive(),
-    ) { rankState, profile, logs, prs, goals, activePlan ->
-        val tonnage = logs.sumOf { it.weightKg * it.reps }
-        val sessionIds = logs.map { it.sessionId }.distinct()
+    ) { rankState, profile, logs, prs, goals ->
+        HomeCombinedData(rankState, profile, logs, prs, goals)
+    }.combine(workoutPlanDao.observeActive()) { data, activePlan ->
+        val tonnage = data.logs.sumOf { it.weightKg * it.reps }
+        val sessionIds = data.logs.map { it.sessionId }.distinct()
         val workoutMinutes = sessionIds.size.toLong() * 60L
-        val records = prs.size
-        val weightKg = profile?.weightKg ?: 0.0
+        val records = data.prs.size
+        val weightKg = data.profile?.weightKg ?: 0.0
 
-        val achievedGoalFromList = goals.firstOrNull { !it.isCompleted && it.progress >= 1f }
+        val achievedGoalFromList = data.goals.firstOrNull { !it.isCompleted && it.progress >= 1f }
 
         HomeUiState(
             isLoading = false,
-            userName = profile?.name ?: "",
-            bodyRankState = rankState,
-            plRankState = rankState,
+            userName = data.profile?.name ?: "",
+            bodyRankState = data.rankState,
+            plRankState = data.rankState,
             totalTonnageKg = tonnage,
             totalWorkoutMinutes = workoutMinutes,
             totalRecords = records,
             userWeightKg = weightKg,
             hasActivePlan = activePlan != null,
-            goals = goals,
+            goals = data.goals,
             achievedGoal = _achievedGoal.value ?: achievedGoalFromList,
         )
     }.combine(_achievedGoal) { state, achievedGoal ->

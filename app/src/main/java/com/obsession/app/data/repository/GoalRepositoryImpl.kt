@@ -161,7 +161,7 @@ class GoalRepositoryImpl @Inject constructor(
         return achieved
     }
 
-    private suspend fun updateGoals(transform: (List<GoalEntity>) -> List<GoalEntity>) {
+    private suspend fun updateGoals(transform: suspend (List<GoalEntity>) -> List<GoalEntity>) {
         context.goalsDataStore.edit { prefs ->
             val current = prefs[GOALS_KEY]?.let {
                 runCatching { json.decodeFromString<List<GoalEntity>>(it) }.getOrElse { emptyList() }

@@ -26,7 +26,7 @@ import com.obsession.app.ui.rank.StrengthRanksScreen
 import com.obsession.app.ui.settings.SettingsScreen
 import com.obsession.app.ui.splash.SplashScreen
 import com.obsession.app.ui.workout.WorkoutSessionScreen
-import com.obsession.app.ui.workouts.WorkoutsTabScreen
+import com.obsession.app.ui.workout.WorkoutsTabScreen
 
 private const val NAV_MS = 300
 
