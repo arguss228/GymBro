@@ -2,16 +2,19 @@ package com.obsession.app.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.obsession.app.data.local.dao.ExerciseDao
 import com.obsession.app.data.local.dao.PersonalRecordDao
 import com.obsession.app.data.local.dao.SetLogDao
 import com.obsession.app.data.local.dao.UserProfileDao
 import com.obsession.app.data.local.dao.WorkoutPlanDao
+import com.obsession.app.data.local.entity.ExerciseEntity
 import com.obsession.app.data.local.entity.PersonalRecordEntity
 import com.obsession.app.data.local.entity.SetLogEntity
 import com.obsession.app.data.local.entity.UserProfileEntity
 import com.obsession.app.data.repository.BodyRankRepository
 import com.obsession.app.data.repository.RankRepository
 import com.obsession.app.data.repository.RankState
+import com.obsession.app.domain.goals.GoalParams
 import com.obsession.app.domain.goals.GoalRepository
 import com.obsession.app.domain.goals.UserGoal
 import com.obsession.app.domain.model.UserBodyRank
@@ -24,7 +27,9 @@ import javax.inject.Inject
 data class HomeUiState(
     val isLoading: Boolean = true,
     val userName: String = "",
+    /** Общий ранг тела — тот же, что и на вкладке «Анализ тела». */
     val bodyRankState: RankState = RankState(),
+    /** Ранг в пауэрлифтинге (жим/присед/тяга). */
     val plRankState: RankState = RankState(),
     val totalTonnageKg: Double = 0.0,
     val totalWorkoutMinutes: Long = 0L,
@@ -33,14 +38,15 @@ data class HomeUiState(
     val hasActivePlan: Boolean = false,
     val goals: List<UserGoal> = emptyList(),
     val achievedGoal: UserGoal? = null,
+    val exercises: List<ExerciseEntity> = emptyList(),
 )
 
 private data class HomeCombinedData(
-    val rankState: RankState,
+    val plRankState: RankState,
+    val bodyRank: UserBodyRank,
     val profile: UserProfileEntity?,
     val logs: List<SetLogEntity>,
     val prs: List<PersonalRecordEntity>,
-    val goals: List<UserGoal>,
 )
 
 @HiltViewModel
@@ -52,50 +58,88 @@ class HomeViewModel @Inject constructor(
     private val prDao: PersonalRecordDao,
     private val workoutPlanDao: WorkoutPlanDao,
     private val goalRepo: GoalRepository,
+    private val exerciseDao: ExerciseDao,
     private val startWorkoutUseCase: StartWorkoutUseCase,
 ) : ViewModel() {
 
     private val _achievedGoal = MutableStateFlow<UserGoal?>(null)
 
-    val state: StateFlow<HomeUiState> = combine(
+    private val baseFlow: Flow<HomeCombinedData> = combine(
         rankRepo.observeRankState(),
+        bodyRankRepo.observeUserBodyRank(),
         profileDao.observe(),
         setLogDao.observeAllSetLogs(),
         prDao.observeAll(),
-        goalRepo.observeGoals(),
-    ) { rankState, profile, logs, prs, goals ->
-        HomeCombinedData(rankState, profile, logs, prs, goals)
-    }.combine(workoutPlanDao.observeActive()) { data, activePlan ->
-        val tonnage = data.logs.sumOf { it.weightKg * it.reps }
-        val sessionIds = data.logs.map { it.sessionId }.distinct()
-        val workoutMinutes = sessionIds.size.toLong() * 60L
-        val records = data.prs.size
-        val weightKg = data.profile?.weightKg ?: 0.0
+    ) { plRankState, bodyRank, profile, logs, prs ->
+        HomeCombinedData(plRankState, bodyRank, profile, logs, prs)
+    }
 
-        val achievedGoalFromList = data.goals.firstOrNull { !it.isCompleted && it.progress >= 1f }
+    val state: StateFlow<HomeUiState> = baseFlow
+        .combine(goalRepo.observeGoals()) { data, goals -> data to goals }
+        .combine(workoutPlanDao.observeActive()) { (data, goals), activePlan -> Triple(data, goals, activePlan) }
+        .combine(exerciseDao.observeAll()) { (data, goals, activePlan), exercises ->
+            val tonnage = data.logs.sumOf { it.weightKg * it.reps }
 
-        HomeUiState(
-            isLoading = false,
-            userName = data.profile?.name ?: "",
-            bodyRankState = data.rankState,
-            plRankState = data.rankState,
-            totalTonnageKg = tonnage,
-            totalWorkoutMinutes = workoutMinutes,
-            totalRecords = records,
-            userWeightKg = weightKg,
-            hasActivePlan = activePlan != null,
-            goals = data.goals,
-            achievedGoal = _achievedGoal.value ?: achievedGoalFromList,
-        )
-    }.combine(_achievedGoal) { state, achievedGoal ->
-        state.copy(achievedGoal = achievedGoal ?: state.achievedGoal)
-    }.catch { emit(HomeUiState(isLoading = false)) }
+            // ИСПРАВЛЕНИЕ БАГА: раньше время тренировки считалось как
+            // "количество сессий * 60 минут" — неверно. Теперь считаем
+            // реальное время каждой сессии как разницу между первым и
+            // последним залогированным подходом и суммируем по всем сессиям.
+            val workoutMs = data.logs
+                .groupBy { it.sessionId }
+                .values
+                .sumOf { sessionLogs ->
+                    val start = sessionLogs.minOf { it.performedAt }
+                    val end = sessionLogs.maxOf { it.performedAt }
+                    (end - start).coerceAtLeast(0L)
+                }
+            val workoutMinutes = workoutMs / 60_000L
+
+            val records = data.prs.size
+            val weightKg = data.profile?.weightKg ?: 0.0
+
+            val achievedGoalFromList = goals.firstOrNull { !it.isCompleted && it.progress >= 1f }
+
+            // Общий ранг тела берём из BodyRankRepository — тот же источник,
+            // что использует вкладка "Анализ тела" (BodyAnalysisScreen).
+            val bodyRankState = RankState(
+                currentRank = data.bodyRank.overallRank,
+                nextRank = data.bodyRank.nextRank,
+                progress = data.bodyRank.progressToNext,
+                hasData = data.bodyRank.hasData,
+            )
+
+            HomeUiState(
+                isLoading = false,
+                userName = data.profile?.name ?: "",
+                bodyRankState = bodyRankState,
+                plRankState = data.plRankState,
+                totalTonnageKg = tonnage,
+                totalWorkoutMinutes = workoutMinutes,
+                totalRecords = records,
+                userWeightKg = weightKg,
+                hasActivePlan = activePlan != null,
+                goals = goals,
+                achievedGoal = _achievedGoal.value ?: achievedGoalFromList,
+                exercises = exercises,
+            )
+        }
+        .combine(_achievedGoal) { state, achievedGoal ->
+            state.copy(achievedGoal = achievedGoal ?: state.achievedGoal)
+        }
+        .catch { emit(HomeUiState(isLoading = false)) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
 
     fun onStartWorkout(onReady: (Long) -> Unit) {
         viewModelScope.launch {
             val result = startWorkoutUseCase()
             onReady(result.sessionId)
+        }
+    }
+
+    /** ИСПРАВЛЕНИЕ БАГА: кнопка "Добавить цель" ранее ничего не делала. */
+    fun addGoal(params: GoalParams) {
+        viewModelScope.launch {
+            goalRepo.addGoal(params)
         }
     }
 
