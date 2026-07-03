@@ -83,12 +83,28 @@ sealed class GoalParams {
 }
 
 // ════════════════════════════════════════════════════════════════
+//  Результат попытки добавить цель
+// ════════════════════════════════════════════════════════════════
+
+sealed class AddGoalResult {
+    /** Цель успешно добавлена. */
+    object Success : AddGoalResult()
+    /** По этой категории (вес тела / win streak) уже есть активная цель. */
+    object DuplicateCategory : AddGoalResult()
+}
+
+// ════════════════════════════════════════════════════════════════
 //  Репозиторий целей (интерфейс — реализация через Room/DataStore)
 // ════════════════════════════════════════════════════════════════
 
 interface GoalRepository {
     fun observeGoals(): Flow<List<UserGoal>>
-    suspend fun addGoal(params: GoalParams)
+    /**
+     * Добавляет новую цель. Для категорий "Вес тела" и "Win Streak" разрешена
+     * только одна активная (не выполненная) цель одновременно — если такая
+     * уже есть, возвращается [AddGoalResult.DuplicateCategory] и цель не создаётся.
+     */
+    suspend fun addGoal(params: GoalParams): AddGoalResult
     suspend fun markCompleted(id: String)
     suspend fun deleteGoal(id: String)
     /** Проверяет цели и возвращает только что достигнутые (для поздравления). */

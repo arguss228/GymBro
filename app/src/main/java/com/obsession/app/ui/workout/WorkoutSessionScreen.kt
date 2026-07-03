@@ -51,7 +51,12 @@ fun WorkoutSessionScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = {
+                        // БАГФИКС: раньше при выходе через "Назад" (без нажатия
+                        // "Завершить") время тренировки нигде не сохранялось.
+                        viewModel.finishWorkout()
+                        onBack()
+                    }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
                     }
                 },

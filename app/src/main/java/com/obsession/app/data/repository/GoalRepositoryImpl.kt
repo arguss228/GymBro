@@ -12,6 +12,7 @@ import com.obsession.app.data.local.entity.PrType
 import com.obsession.app.domain.goals.*
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -59,7 +60,21 @@ class GoalRepositoryImpl @Inject constructor(
             }.getOrElse { emptyList() }
         }
 
-    override suspend fun addGoal(params: GoalParams) {
+    override suspend fun addGoal(params: GoalParams): AddGoalResult {
+        // Для "Веса тела" и "Win Streak" разрешена только одна активная цель
+        // одновременно — цель по силе может быть несколько (для разных упражнений).
+        val exclusiveType = when (params) {
+            is GoalParams.BodyWeight -> "BODY_WEIGHT"
+            is GoalParams.WinStreak -> "WIN_STREAK"
+            is GoalParams.Strength -> null
+        }
+
+        if (exclusiveType != null) {
+            val currentGoals = readGoals()
+            val hasActiveOfType = currentGoals.any { it.type == exclusiveType && !it.isCompleted }
+            if (hasActiveOfType) return AddGoalResult.DuplicateCategory
+        }
+
         val entity = when (params) {
             is GoalParams.Strength -> GoalEntity(
                 id = UUID.randomUUID().toString(),
@@ -102,7 +117,15 @@ class GoalRepositoryImpl @Inject constructor(
             )
         }
         updateGoals { current -> current + entity }
+        return AddGoalResult.Success
     }
+
+    private suspend fun readGoals(): List<GoalEntity> =
+        context.goalsDataStore.data.map { prefs ->
+            prefs[GOALS_KEY]?.let { raw ->
+                runCatching { json.decodeFromString<List<GoalEntity>>(raw) }.getOrElse { emptyList() }
+            } ?: emptyList()
+        }.first()
 
     override suspend fun markCompleted(id: String) {
         updateGoals { goals ->

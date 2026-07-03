@@ -19,6 +19,10 @@ class ProgressRepository @Inject constructor(
     fun observeSession(sessionId: Long): Flow<List<SetLogEntity>> =
         setLogDao.observeSession(sessionId)
 
+    /** Все залогированные подходы — используется для календаря тренировок и вин-стрика. */
+    fun observeAllSetLogs(): Flow<List<SetLogEntity>> =
+        setLogDao.observeAllSetLogs()
+
     fun observeExerciseHistory(exerciseId: Long): Flow<List<SetLogEntity>> =
         setLogDao.observeForExercise(exerciseId)
 

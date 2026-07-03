@@ -1,5 +1,7 @@
 package com.obsession.app.domain.usecase
 
+import com.obsession.app.data.local.dao.WorkoutSessionDao
+import com.obsession.app.data.local.entity.WorkoutSessionEntity
 import com.obsession.app.data.repository.ProgressRepository
 import com.obsession.app.data.repository.WorkoutRepository
 import kotlinx.coroutines.flow.firstOrNull
@@ -12,6 +14,7 @@ import javax.inject.Inject
 class StartWorkoutUseCase @Inject constructor(
     private val progressRepo: ProgressRepository,
     private val workoutRepo: WorkoutRepository,
+    private val workoutSessionDao: WorkoutSessionDao,
 ) {
     data class Result(
         val sessionId: Long,
@@ -21,6 +24,13 @@ class StartWorkoutUseCase @Inject constructor(
     suspend operator fun invoke(): Result {
         val sessionId = progressRepo.getNextSessionId()
         val active = workoutRepo.observeActivePlan().firstOrNull()
+
+        // Фиксируем момент старта тренировки — от него отсчитывается таймер
+        // вверху экрана тренировки, и это же время попадёт в карточку на главной.
+        workoutSessionDao.insert(
+            WorkoutSessionEntity(sessionId = sessionId, startedAt = System.currentTimeMillis())
+        )
+
         return Result(sessionId = sessionId, activePlanId = active?.id)
     }
 }

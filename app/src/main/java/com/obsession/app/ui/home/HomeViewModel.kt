@@ -7,6 +7,7 @@ import com.obsession.app.data.local.dao.PersonalRecordDao
 import com.obsession.app.data.local.dao.SetLogDao
 import com.obsession.app.data.local.dao.UserProfileDao
 import com.obsession.app.data.local.dao.WorkoutPlanDao
+import com.obsession.app.data.local.dao.WorkoutSessionDao
 import com.obsession.app.data.local.entity.ExerciseEntity
 import com.obsession.app.data.local.entity.PersonalRecordEntity
 import com.obsession.app.data.local.entity.SetLogEntity
@@ -14,6 +15,7 @@ import com.obsession.app.data.local.entity.UserProfileEntity
 import com.obsession.app.data.repository.BodyRankRepository
 import com.obsession.app.data.repository.RankRepository
 import com.obsession.app.data.repository.RankState
+import com.obsession.app.domain.goals.AddGoalResult
 import com.obsession.app.domain.goals.GoalParams
 import com.obsession.app.domain.goals.GoalRepository
 import com.obsession.app.domain.goals.UserGoal
@@ -60,6 +62,7 @@ class HomeViewModel @Inject constructor(
     private val goalRepo: GoalRepository,
     private val exerciseDao: ExerciseDao,
     private val startWorkoutUseCase: StartWorkoutUseCase,
+    private val workoutSessionDao: WorkoutSessionDao,
 ) : ViewModel() {
 
     private val _achievedGoal = MutableStateFlow<UserGoal?>(null)
@@ -79,21 +82,6 @@ class HomeViewModel @Inject constructor(
         .combine(workoutPlanDao.observeActive()) { (data, goals), activePlan -> Triple(data, goals, activePlan) }
         .combine(exerciseDao.observeAll()) { (data, goals, activePlan), exercises ->
             val tonnage = data.logs.sumOf { it.weightKg * it.reps }
-
-            // ИСПРАВЛЕНИЕ БАГА: раньше время тренировки считалось как
-            // "количество сессий * 60 минут" — неверно. Теперь считаем
-            // реальное время каждой сессии как разницу между первым и
-            // последним залогированным подходом и суммируем по всем сессиям.
-            val workoutMs = data.logs
-                .groupBy { it.sessionId }
-                .values
-                .sumOf { sessionLogs ->
-                    val start = sessionLogs.minOf { it.performedAt }
-                    val end = sessionLogs.maxOf { it.performedAt }
-                    (end - start).coerceAtLeast(0L)
-                }
-            val workoutMinutes = workoutMs / 60_000L
-
             val records = data.prs.size
             val weightKg = data.profile?.weightKg ?: 0.0
 
@@ -114,17 +102,22 @@ class HomeViewModel @Inject constructor(
                 bodyRankState = bodyRankState,
                 plRankState = data.plRankState,
                 totalTonnageKg = tonnage,
-                totalWorkoutMinutes = workoutMinutes,
                 totalRecords = records,
                 userWeightKg = weightKg,
                 hasActivePlan = activePlan != null,
-                goals = goals,
                 achievedGoal = _achievedGoal.value ?: achievedGoalFromList,
                 exercises = exercises,
+                goals = goals,
             )
         }
         .combine(_achievedGoal) { state, achievedGoal ->
             state.copy(achievedGoal = achievedGoal ?: state.achievedGoal)
+        }
+        // Реальное суммарное время тренировок — берётся из сохранённых сессий
+        // (то самое время, которое отсчитывал таймер вверху экрана тренировки),
+        // а не вычисляется приблизительно по времени логирования подходов.
+        .combine(workoutSessionDao.observeTotalDurationSeconds()) { state, totalSeconds ->
+            state.copy(totalWorkoutMinutes = totalSeconds / 60L)
         }
         .catch { emit(HomeUiState(isLoading = false)) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
@@ -137,9 +130,10 @@ class HomeViewModel @Inject constructor(
     }
 
     /** ИСПРАВЛЕНИЕ БАГА: кнопка "Добавить цель" ранее ничего не делала. */
-    fun addGoal(params: GoalParams) {
+    fun addGoal(params: GoalParams, onResult: (AddGoalResult) -> Unit = {}) {
         viewModelScope.launch {
-            goalRepo.addGoal(params)
+            val result = goalRepo.addGoal(params)
+            onResult(result)
         }
     }
 

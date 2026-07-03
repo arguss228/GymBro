@@ -11,6 +11,7 @@ import com.obsession.app.data.local.dao.SetLogDao
 import com.obsession.app.data.local.dao.TrainingDayDao
 import com.obsession.app.data.local.dao.UserProfileDao
 import com.obsession.app.data.local.dao.WorkoutPlanDao
+import com.obsession.app.data.local.dao.WorkoutSessionDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -40,6 +41,7 @@ object DatabaseModule {
     @Provides fun provideUserProfileDao(db: ObsessionDatabase): UserProfileDao       = db.userProfileDao()
     @Provides fun provideOneRmDao(db: ObsessionDatabase): OneRmDao                   = db.oneRmDao()
     @Provides fun provideExerciseMaxDao(db: ObsessionDatabase): ExerciseMaxDao       = db.exerciseMaxDao()
+    @Provides fun provideWorkoutSessionDao(db: ObsessionDatabase): WorkoutSessionDao = db.workoutSessionDao()
 
     @Provides
     @Singleton

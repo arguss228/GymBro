@@ -37,6 +37,7 @@ import java.util.*
 fun AddGoalDialog(
     exercises: List<ExerciseEntity>,
     currentUserWeight: Double,
+    errorMessage: String? = null,
     onConfirm: (GoalParams) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -52,25 +53,56 @@ fun AddGoalDialog(
                 .clip(RoundedCornerShape(28.dp))
                 .background(MaterialTheme.colorScheme.surface),
         ) {
-            when (selectedType) {
-                null -> GoalTypePicker(
-                    onSelect = { selectedType = it },
-                    onDismiss = onDismiss,
-                )
-                GoalType.STRENGTH -> StrengthGoalForm(
-                    exercises = exercises,
-                    onConfirm = { onConfirm(it); onDismiss() },
-                    onBack = { selectedType = null },
-                )
-                GoalType.BODY_WEIGHT -> BodyWeightGoalForm(
-                    currentWeight = currentUserWeight,
-                    onConfirm = { onConfirm(it); onDismiss() },
-                    onBack = { selectedType = null },
-                )
-                GoalType.WIN_STREAK -> WinStreakGoalForm(
-                    onConfirm = { onConfirm(it); onDismiss() },
-                    onBack = { selectedType = null },
-                )
+            Column {
+                when (selectedType) {
+                    null -> GoalTypePicker(
+                        onSelect = { selectedType = it },
+                        onDismiss = onDismiss,
+                    )
+                    GoalType.STRENGTH -> StrengthGoalForm(
+                        exercises = exercises,
+                        onConfirm = onConfirm,
+                        onBack = { selectedType = null },
+                    )
+                    GoalType.BODY_WEIGHT -> BodyWeightGoalForm(
+                        currentWeight = currentUserWeight,
+                        onConfirm = onConfirm,
+                        onBack = { selectedType = null },
+                    )
+                    GoalType.WIN_STREAK -> WinStreakGoalForm(
+                        onConfirm = onConfirm,
+                        onBack = { selectedType = null },
+                    )
+                }
+
+                // БАГФИКС: сообщение о том, что цель по этой категории (вес
+                // тела / win streak) уже установлена — диалог при этом не
+                // закрывается, чтобы пользователь мог выбрать другую категорию.
+                AnimatedVisibility(visible = errorMessage != null, enter = fadeIn(), exit = fadeOut()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp, vertical = 4.dp)
+                            .padding(bottom = 20.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(MaterialTheme.colorScheme.errorContainer)
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Icon(
+                            Icons.Default.Info,
+                            null,
+                            tint = MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Text(
+                            errorMessage ?: "",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                        )
+                    }
+                }
             }
         }
     }

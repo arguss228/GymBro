@@ -78,6 +78,23 @@ class ProgressViewModel @Inject constructor(
                 _state.value = _state.value.copy(totalSessions = total)
             }
         }
+
+        // БАГФИКС: раньше completedWorkoutDates и winStreak никогда не
+        // заполнялись, поэтому в календаре не было огоньков, а серия
+        // тренировок всегда показывала 0. Теперь берём даты реальных
+        // тренировок из залогированных подходов и считаем стрик от них.
+        viewModelScope.launch {
+            progressRepo.observeAllSetLogs().collect { logs ->
+                val completedDates = logs
+                    .map { dayKeyFormat.format(Date(it.performedAt)) }
+                    .toSortedSet()
+
+                _state.value = _state.value.copy(
+                    completedWorkoutDates = completedDates,
+                    winStreak = calculateStreak(completedDates),
+                )
+            }
+        }
     }
 
     private fun calculateStreak(sortedDates: Set<String>): Int {

@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.*
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.obsession.app.data.repository.RankState
+import com.obsession.app.domain.goals.AddGoalResult
 import com.obsession.app.domain.goals.GoalType
 import com.obsession.app.domain.goals.UserGoal
 import com.obsession.app.domain.model.StrengthRank
@@ -35,6 +36,7 @@ fun HomeScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var showAddGoalDialog by remember { mutableStateOf(false) }
+    var goalDialogError by remember { mutableStateOf<String?>(null) }
 
     if (state.achievedGoal != null) {
         GoalAchievedDialog(goal = state.achievedGoal!!, onDismiss = viewModel::dismissAchievedGoal)
@@ -42,12 +44,30 @@ fun HomeScreen(
 
     // БАГФИКС: раньше кнопка "Добавить цель" никак не была подключена.
     // Теперь по клику открывается модальное окно выбора типа цели.
+    // Если по категории "Вес тела" / "Win Streak" уже есть активная цель —
+    // диалог не закрывается, а показывает сообщение об этом.
     if (showAddGoalDialog) {
         AddGoalDialog(
             exercises = state.exercises,
             currentUserWeight = state.userWeightKg,
-            onConfirm = { params -> viewModel.addGoal(params) },
-            onDismiss = { showAddGoalDialog = false },
+            errorMessage = goalDialogError,
+            onConfirm = { params ->
+                viewModel.addGoal(params) { result ->
+                    when (result) {
+                        AddGoalResult.Success -> {
+                            goalDialogError = null
+                            showAddGoalDialog = false
+                        }
+                        AddGoalResult.DuplicateCategory -> {
+                            goalDialogError = "Цель по этой категории уже установлена"
+                        }
+                    }
+                }
+            },
+            onDismiss = {
+                showAddGoalDialog = false
+                goalDialogError = null
+            },
         )
     }
 
@@ -77,7 +97,6 @@ fun HomeScreen(
             GoalsSection(
                 state = state,
                 onAddGoal = { showAddGoalDialog = true },
-                onViewGoals = {},
             )
         }
     }
@@ -130,8 +149,8 @@ private fun HomeHeader(userName: String, onOpenProfile: () -> Unit) {
 /**
  * Единая большая карточка ранга.
  * По умолчанию показывает Общий ранг тела (совпадает со вкладкой "Анализ тела").
- * Клик по лицевой стороне -> плавный 3D-переворот на сторону "Ранг в пауэрлифтинге".
- * Клик, когда уже показана сторона пауэрлифтинга -> открывает экран со всеми рангами.
+ * Отдельная кнопка-иконка в углу карточки -> плавный 3D-переворот на сторону "Ранг в пауэрлифтинге" и обратно.
+ * Клик по самой карточке (не по кнопке) -> открывает экран со всеми рангами.
  */
 @Composable
 private fun RankFlipCard(state: HomeUiState, onOpenRanks: () -> Unit) {
@@ -144,62 +163,75 @@ private fun RankFlipCard(state: HomeUiState, onOpenRanks: () -> Unit) {
 
     val bodyRank = state.bodyRankState
     val plRank = state.plRankState
+    val activeRank = if (rotation <= 90f) bodyRank.currentRank else plRank.currentRank
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
-            .height(240.dp)
-            .graphicsLayer {
-                rotationY = rotation
-                cameraDistance = 14f * density
-            }
-            .clip(RoundedCornerShape(28.dp))
-            .background(
-                Brush.linearGradient(
-                    colors = listOf(
-                        Color(0xFF0D1B2A),
-                        (if (rotation <= 90f) bodyRank.currentRank else plRank.currentRank).primaryColor.copy(alpha = 0.22f),
-                        Color(0xFF0A1018),
+            .height(240.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    rotationY = rotation
+                    cameraDistance = 14f * density
+                }
+                .clip(RoundedCornerShape(28.dp))
+                .background(
+                    Brush.linearGradient(
+                        colors = listOf(
+                            Color(0xFF0D1B2A),
+                            activeRank.primaryColor.copy(alpha = 0.22f),
+                            Color(0xFF0A1018),
+                        )
                     )
                 )
-            )
-            .border(
-                1.dp,
-                (if (rotation <= 90f) bodyRank.currentRank else plRank.currentRank).primaryColor.copy(0.3f),
-                RoundedCornerShape(28.dp),
-            )
-            .clickable {
-                if (!flipped) {
-                    // Показывается общий ранг тела — переворачиваем карточку.
-                    flipped = true
-                } else {
-                    // Показывается ранг в пауэрлифтинге — открываем экран со всеми рангами.
-                    onOpenRanks()
-                }
-            }
-            .padding(20.dp),
-    ) {
-        if (rotation <= 90f) {
-            RankCardFace(
-                rank = bodyRank.currentRank,
-                title = "Общий ранг",
-                subtitle = "тела",
-                stats = null,
-                progress = bodyRank.progress,
-                hint = "Нажмите, чтобы посмотреть ранг в пауэрлифтинге",
-            )
-        } else {
-            Box(modifier = Modifier.fillMaxSize().graphicsLayer { rotationY = 180f }) {
+                .border(1.dp, activeRank.primaryColor.copy(0.3f), RoundedCornerShape(28.dp))
+                .clickable { onOpenRanks() }
+                .padding(20.dp),
+        ) {
+            if (rotation <= 90f) {
                 RankCardFace(
-                    rank = plRank.currentRank,
-                    title = "Ранг в",
-                    subtitle = "пауэрлифтинге",
-                    stats = Triple(plRank.bench, plRank.squat, plRank.deadlift),
-                    progress = plRank.progress,
+                    rank = bodyRank.currentRank,
+                    title = "Общий ранг",
+                    subtitle = "тела",
+                    stats = null,
+                    progress = bodyRank.progress,
                     hint = "Нажмите, чтобы открыть все ранги",
                 )
+            } else {
+                Box(modifier = Modifier.fillMaxSize().graphicsLayer { rotationY = 180f }) {
+                    RankCardFace(
+                        rank = plRank.currentRank,
+                        title = "Ранг в",
+                        subtitle = "пауэрлифтинге",
+                        stats = Triple(plRank.bench, plRank.squat, plRank.deadlift),
+                        progress = plRank.progress,
+                        hint = "Нажмите, чтобы открыть все ранги",
+                    )
+                }
             }
+        }
+
+        // Кнопка переворота карточки — не вращается вместе с карточкой,
+        // поэтому остаётся в одном и том же месте и не зависит от текущей стороны.
+        IconButton(
+            onClick = { flipped = !flipped },
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(12.dp)
+                .size(38.dp)
+                .clip(CircleShape)
+                .background(Color.White.copy(alpha = 0.12f)),
+        ) {
+            Icon(
+                imageVector = Icons.Default.Autorenew,
+                contentDescription = "Перевернуть карточку",
+                tint = Color.White.copy(alpha = 0.85f),
+                modifier = Modifier.size(20.dp),
+            )
         }
     }
 }
@@ -353,12 +385,26 @@ private fun formatDuration(minutes: Long): String {
     }
 }
 
+private enum class GoalsFilter(val label: String) {
+    IN_PROGRESS("Не выполнены"),
+    COMPLETED("Выполнены"),
+}
+
 @Composable
 private fun GoalsSection(
     state: HomeUiState,
     onAddGoal: () -> Unit,
-    onViewGoals: () -> Unit,
 ) {
+    // БАГФИКС: кнопка "Все" рядом с "Добавить цель" раньше ничего не делала.
+    // Теперь это переключатель между невыполненными и выполненными целями.
+    var filter by remember { mutableStateOf(GoalsFilter.IN_PROGRESS) }
+    val filteredGoals = remember(state.goals, filter) {
+        when (filter) {
+            GoalsFilter.IN_PROGRESS -> state.goals.filter { !it.isCompleted }
+            GoalsFilter.COMPLETED -> state.goals.filter { it.isCompleted }
+        }
+    }
+
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -374,23 +420,94 @@ private fun GoalsSection(
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground,
             )
+            SmallAddGoalButton(onClick = onAddGoal)
+        }
+
+        if (state.goals.isNotEmpty()) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (state.goals.isNotEmpty()) {
-                    TextButton(onClick = onViewGoals) {
-                        Text("Все", style = MaterialTheme.typography.labelLarge)
-                    }
+                GoalsFilter.entries.forEach { f ->
+                    GoalsFilterChip(
+                        label = f.label,
+                        selected = filter == f,
+                        onClick = { filter = f },
+                    )
                 }
-                SmallAddGoalButton(onClick = onAddGoal)
             }
         }
 
-        if (state.goals.isEmpty()) {
-            EmptyGoalsPlaceholder(onAddGoal = onAddGoal)
-        } else {
-            state.goals.take(3).forEach { goal ->
-                GoalCard(goal = goal)
-            }
+        when {
+            state.goals.isEmpty() -> EmptyGoalsPlaceholder(onAddGoal = onAddGoal)
+            filteredGoals.isEmpty() -> EmptyFilteredGoalsPlaceholder(filter = filter)
+            // БАГФИКС: раньше показывались только первые 3 цели (.take(3)),
+            // остальные были не видны и никак не доступны. Теперь все цели
+            // помещаются в панель фиксированной высоты (видно ~4 карточки),
+            // а если их больше — панель скроллится по вертикали, не растягивая
+            // главный экран.
+            else -> GoalsPanel(goals = filteredGoals)
         }
+    }
+}
+
+/** Высота одной карточки цели + отступ между карточками. */
+private val GoalCardHeight = 108.dp
+private val GoalCardSpacing = 10.dp
+private const val VisibleGoalCards = 4
+
+@Composable
+private fun GoalsPanel(goals: List<UserGoal>) {
+    val maxPanelHeight = GoalCardHeight * VisibleGoalCards + GoalCardSpacing * (VisibleGoalCards - 1)
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(max = maxPanelHeight),
+        verticalArrangement = Arrangement.spacedBy(GoalCardSpacing),
+    ) {
+        items(goals, key = { it.id }) { goal ->
+            GoalCard(goal = goal)
+        }
+    }
+}
+
+@Composable
+private fun GoalsFilterChip(label: String, selected: Boolean, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(
+                if (selected) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.surfaceVariant
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+    ) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            color = if (selected) MaterialTheme.colorScheme.onPrimary
+            else MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun EmptyFilteredGoalsPlaceholder(filter: GoalsFilter) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(24.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            if (filter == GoalsFilter.COMPLETED) "Пока нет выполненных целей"
+            else "Нет целей в процессе",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
     }
 }
 

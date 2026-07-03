@@ -12,6 +12,7 @@ import com.obsession.app.data.local.dao.SetLogDao
 import com.obsession.app.data.local.dao.TrainingDayDao
 import com.obsession.app.data.local.dao.UserProfileDao
 import com.obsession.app.data.local.dao.WorkoutPlanDao
+import com.obsession.app.data.local.dao.WorkoutSessionDao
 import com.obsession.app.data.local.entity.ExerciseEntity
 import com.obsession.app.data.local.entity.ExerciseMaxEntity
 import com.obsession.app.data.local.entity.OneRmEntity
@@ -21,6 +22,7 @@ import com.obsession.app.data.local.entity.TrainingDayEntity
 import com.obsession.app.data.local.entity.TrainingDayExerciseEntity
 import com.obsession.app.data.local.entity.UserProfileEntity
 import com.obsession.app.data.local.entity.WorkoutPlanEntity
+import com.obsession.app.data.local.entity.WorkoutSessionEntity
 
 @Database(
     entities = [
@@ -33,8 +35,9 @@ import com.obsession.app.data.local.entity.WorkoutPlanEntity
         UserProfileEntity::class,
         OneRmEntity::class,
         ExerciseMaxEntity::class,
+        WorkoutSessionEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -48,6 +51,7 @@ abstract class ObsessionDatabase : RoomDatabase() {
     abstract fun userProfileDao(): UserProfileDao
     abstract fun oneRmDao(): OneRmDao
     abstract fun exerciseMaxDao(): ExerciseMaxDao
+    abstract fun workoutSessionDao(): WorkoutSessionDao
 
     companion object {
         const val DATABASE_NAME = "obsession.db"

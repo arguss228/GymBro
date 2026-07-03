@@ -3,6 +3,7 @@ package com.obsession.app.ui.workout
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.obsession.app.data.local.dao.WorkoutSessionDao
 import com.obsession.app.data.local.entity.ExerciseEntity
 import com.obsession.app.data.local.entity.SetLogEntity
 import com.obsession.app.data.local.entity.TrainingDayEntity
@@ -56,6 +57,7 @@ class WorkoutSessionViewModel @Inject constructor(
     private val rankRepo: RankRepository,
     private val logSetUseCase: LogSetUseCase,
     private val goalRepo: GoalRepository,
+    private val workoutSessionDao: WorkoutSessionDao,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -201,10 +203,19 @@ class WorkoutSessionViewModel @Inject constructor(
     }
 
     fun finishWorkout() {
+        val elapsedSeconds = elapsedSecsFlow.value
+
         timerJob?.cancel()
         restJob?.cancel()
 
         viewModelScope.launch {
+            // Сохраняем реальное время тренировки (то самое, что показывал таймер
+            // вверху экрана), чтобы оно попало в карточку "Общее время" на главной.
+            workoutSessionDao.updateDuration(
+                sessionId = sessionId,
+                endedAt = System.currentTimeMillis(),
+                durationSeconds = elapsedSeconds,
+            )
             goalRepo.checkAndUpdateGoals()
         }
     }
